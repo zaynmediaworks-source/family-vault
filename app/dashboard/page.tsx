@@ -1,79 +1,47 @@
 'use client';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect,useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-type Row = { id: string; type: string; label: string; amount: number; happened_at: string };
-type Household = { id: string; name: string };
-const rp = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
-export default function DashboardPage() {
-  const router = useRouter();
-  const [rows, setRows] = useState<Row[]>([]);
-  const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState('');
-  const [households, setHouseholds] = useState<Household[]>([]);
-  const [householdId, setHouseholdId] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [name, setName] = useState('Keluarga Kita');
-  async function loadRows(id: string) {
-    setRows([]);
-    const [income, expenses] = await Promise.all([
-      supabase.from('income').select('id,source,amount,happened_at').eq('household_id', id).order('happened_at', { ascending: false }).limit(1000),
-      supabase.from('expenses').select('id,name,amount,happened_at').eq('household_id', id).order('happened_at', { ascending: false }).limit(1000),
-    ]);
-    if (income.error || expenses.error) throw new Error(income.error?.message || expenses.error?.message);
-    setRows([
-      ...(income.data || []).map(r => ({ id: r.id, type: 'income', label: r.source, amount: Number(r.amount), happened_at: r.happened_at })),
-      ...(expenses.data || []).map(r => ({ id: r.id, type: 'expense', label: r.name, amount: Number(r.amount), happened_at: r.happened_at })),
-    ].sort((a, b) => b.happened_at.localeCompare(a.happened_at)));
-  }
-  useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') { setRows([]); router.replace('/login'); }
-    });
-    (async () => {
-      try {
-        const { data, error: authError } = await supabase.auth.getUser();
-        if (authError || !data.user) { router.replace('/login'); return; }
-        setEmail(data.user.email || ''); setUserId(data.user.id);
-        const result = await supabase.from('households').select('id,name').order('created_at');
-        if (result.error) throw result.error;
-        setHouseholds(result.data || []);
-        if (result.data?.[0]) { setHouseholdId(result.data[0].id); await loadRows(result.data[0].id); }
-      } catch (e) { setError(e instanceof Error ? e.message : 'Data belum bisa dimuat. Coba muat ulang.'); }
-      finally { setLoading(false); }
-    })();
-    return () => listener.subscription.unsubscribe();
-  }, [router]);
-  async function createHousehold(e: FormEvent) {
-    e.preventDefault(); setBusy(true); setError('');
-    try {
-      const result = await supabase.from('households').insert({ name: name.trim(), created_by: userId }).select('id,name').single();
-      if (result.error) throw result.error;
-      setHouseholds([result.data]); setHouseholdId(result.data.id); await loadRows(result.data.id);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Keluarga belum bisa dibuat.'); }
-    finally { setBusy(false); }
-  }
-  async function changeHousehold(id: string) {
-    setHouseholdId(id); setBusy(true); setError('');
-    try { await loadRows(id); } catch (e) { setError(e instanceof Error ? e.message : 'Gagal memuat transaksi.'); }
-    finally { setBusy(false); }
-  }
-  async function logout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) return setError(error.message);
-    setRows([]); router.replace('/login');
-  }
-  const income = rows.filter(r => r.type === 'income').reduce((sum, r) => sum + r.amount, 0);
-  const expense = rows.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0);
-  if (loading || !userId) return <main className="center"><section className="auth-card"><p role="status">{error || 'Memuat Family Vault…'}</p><a href="/login">Kembali ke login</a></section></main>;
-  return <main className="shell"><aside className="sidebar"><div className="logo">Family Vault</div><p className="side-muted">Your Family Finance Hub</p><nav aria-label="Menu utama"><span className="nav-active">Dashboard</span></nav><div className="side-bottom"><small>{email}</small><button onClick={logout}>Keluar</button></div></aside>
-    <section className="content"><h1>Dashboard</h1><p className="muted">Keuangan keluarga, dalam satu tempat.</p>{error && <p role="alert" className="status error">{error}</p>}
-      {!households.length ? <article className="card"><h2>Selamat datang di Family Vault</h2><p>Buat ruang keluarga untuk menghubungkan data keuanganmu.</p><form onSubmit={createHousehold}><label>Nama keluarga<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label><button className="primary" disabled={busy || !name.trim()}>{busy ? 'Menyimpan…' : 'Buat keluarga'}</button></form><p className="muted">Jika keluarga sudah dibuat oleh pasangan, tunggu penambahan akunmu oleh pemilik keluarga.</p></article> : <>
-        <label>Keluarga<select disabled={busy} value={householdId} onChange={e => void changeHousehold(e.target.value)}>{households.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select></label><p className="muted">Ringkasan hingga 1.000 catatan terbaru per jenis transaksi.</p>
-        <div className="stats"><article className="card"><span>Pemasukan</span><strong>{error || busy ? '—' : rp(income)}</strong></article><article className="card"><span>Pengeluaran</span><strong>{error || busy ? '—' : rp(expense)}</strong></article><article className="card"><span>Sisa</span><strong>{error || busy ? '—' : rp(income - expense)}</strong></article></div>
-        <article className="card"><h2>Transaksi terbaru</h2>{busy ? <p role="status">Memuat transaksi…</p> : error ? <button onClick={() => void changeHousehold(householdId)}>Coba lagi</button> : !rows.length ? <p className="muted">Belum ada transaksi di keluarga ini.</p> : <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Nama</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>{rows.slice(0, 10).map(r => <tr key={`${r.type}-${r.id}`}><td>{r.happened_at}</td><td>{r.label}</td><td>{r.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td><td>{rp(r.amount)}</td></tr>)}</tbody></table></div>}</article></>}
-      <article className="card roadmap"><h2>Family Vault Online v1</h2><p>Versi awal ini menyediakan login, ruang keluarga, dan ringkasan data. Form pencatatan, undangan pasangan, budgeting, investasi, tabungan, hutang, dan wishlist belum tersedia di paket ini.</p></article>
-    </section></main>;
-}
+
+type R=Record<string,any>; type Tab='Dashboard'|'Finance'|'Investasi'|'Tabungan'|'Hutang'|'Wishlist'|'Keluarga';
+const rp=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
+const today=()=>new Date().toISOString().slice(0,10);
+function keyFor(s:string){const d=new Date(s+'T00:00:00');let y=d.getFullYear(),m=d.getMonth();if(d.getDate()<22){m--;if(m<0){m=11;y--;}}return `${y}-${String(m+1).padStart(2,'0')}`}
+function bounds(k:string){const [y,m]=k.split('-').map(Number),a=new Date(y,m-1,22),b=new Date(y,m,22),z=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;const l=new Date(b);l.setDate(l.getDate()-1);return{start:z(a),end:z(b),last:z(l)}}
+function label(k:string){const b=bounds(k),f=new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric'});return `${f.format(new Date(b.start+'T00:00:00'))} – ${f.format(new Date(b.last+'T00:00:00'))}`}
+const txt=(q:string,d='')=>{const v=prompt(q,d);return v===null?null:v.trim()}; const money=(q:string,d='0')=>{const v=txt(q,d);if(v===null)return null;const n=Number(v);return Number.isFinite(n)?n:null};
+export default function Dashboard(){
+ const router=useRouter(); const [uid,setUid]=useState(''),[email,setEmail]=useState(''),[tab,setTab]=useState<Tab>('Dashboard'),[period,setPeriod]=useState(keyFor(today())),[hid,setHid]=useState(''),[houses,setHouses]=useState<R[]>([]),[busy,setBusy]=useState(true),[err,setErr]=useState('');
+ const [income,setIncome]=useState<R[]>([]),[expenses,setExpenses]=useState<R[]>([]),[budgets,setBudgets]=useState<R[]>([]),[obs,setObs]=useState<R[]>([]),[etfs,setEtfs]=useState<R[]>([]),[gold,setGold]=useState<R[]>([]),[stocks,setStocks]=useState<R[]>([]),[savings,setSavings]=useState<R[]>([]),[debts,setDebts]=useState<R[]>([]),[wishes,setWishes]=useState<R[]>([]);
+ const inside=(d:string)=>{const b=bounds(period);return !!d&&d>=b.start&&d<b.end};
+ async function loadHouse(){const r=await supabase.from('households').select('id,name').order('created_at');if(r.error)throw r.error;setHouses(r.data||[]);return r.data||[]}
+ async function load(id:string){setBusy(true);setErr('');try{const a=await Promise.all([
+  supabase.from('income').select('*').eq('household_id',id),supabase.from('expenses').select('*').eq('household_id',id),supabase.from('budgets').select('*').eq('household_id',id),supabase.from('obligations').select('*').eq('household_id',id),
+  supabase.from('etf_assets').select('*,etf_transactions(*)').eq('household_id',id),supabase.from('gold_assets').select('*,gold_transactions(*)').eq('household_id',id),supabase.from('dividend_stocks').select('*,dividend_stock_transactions(*),dividends(*)').eq('household_id',id),supabase.from('savings').select('*,saving_transactions(*)').eq('household_id',id),supabase.from('debts').select('*,debt_payments(*)').eq('household_id',id),supabase.from('wishlists').select('*,wishlist_parts(*)').eq('household_id',id)
+ ]);const e=a.find(x=>x.error)?.error;if(e)throw e;[setIncome,setExpenses,setBudgets,setObs,setEtfs,setGold,setStocks,setSavings,setDebts,setWishes].forEach((f,i)=>f(a[i].data||[]))}catch(e:any){setErr(e.message||'Gagal memuat data')}finally{setBusy(false)}}
+ useEffect(()=>{(async()=>{const {data}=await supabase.auth.getUser();if(!data.user){router.replace('/login');return}setUid(data.user.id);setEmail(data.user.email||'');try{const h=await loadHouse();if(h[0]){setHid(h[0].id);await load(h[0].id)}}catch(e:any){setErr(e.message)}finally{setBusy(false)}})()},[router]);
+ async function ins(t:string,p:R){const r=await supabase.from(t).insert(p);if(r.error)throw r.error;await load(hid)} async function del(t:string,id:string){if(!confirm('Hapus data ini?'))return;const r=await supabase.from(t).delete().eq('id',id);if(r.error)setErr(r.error.message);else await load(hid)} async function upd(t:string,id:string,p:R){const r=await supabase.from(t).update(p).eq('id',id);if(r.error)throw r.error;await load(hid)}
+ async function run(f:()=>Promise<void>){setBusy(true);setErr('');try{await f()}catch(e:any){setErr(e.message||'Operasi gagal')}finally{setBusy(false)}}
+ const pi=income.filter(x=>inside(x.happened_at)),pe=expenses.filter(x=>inside(x.happened_at)),po=obs.filter(x=>inside(x.due_date));const inc=pi.reduce((s,x)=>s+Number(x.amount),0),exp=pe.reduce((s,x)=>s+Number(x.amount),0),ob=po.filter(x=>x.status!=='sudah').reduce((s,x)=>s+Number(x.amount),0);
+ const debt=debts.reduce((s,d)=>s+Math.max(0,Number(d.original_amount)-(d.debt_payments||[]).reduce((a:number,p:R)=>a+Number(p.amount),0)),0);
+ const etfVal=etfs.reduce((s,e)=>s+(Number(e.current_value)||Math.max(0,(e.etf_transactions||[]).reduce((a:number,t:R)=>a+(t.type==='buy'?1:-1)*Number(t.amount),0))),0);
+ const goldVal=gold.reduce((s,g)=>s+Math.max(0,(g.gold_transactions||[]).reduce((a:number,t:R)=>a+(t.type==='buy'?1:-1)*Number(t.grams),0))*Number(g.current_price_per_gram),0);
+ const stockVal=stocks.reduce((s,x)=>s+Math.max(0,(x.dividend_stock_transactions||[]).reduce((a:number,t:R)=>a+(t.type==='buy'?1:-1)*Number(t.units),0))*Number(x.current_price),0); const saveVal=savings.reduce((s,x)=>s+(x.saving_transactions||[]).reduce((a:number,t:R)=>a+Number(t.amount),0),0);
+ async function createHouse(){const name=txt('Nama keluarga','Keluarga Kita');if(!name)return;const r=await supabase.from('households').insert({name,created_by:uid}).select('id,name').single();if(r.error)throw r.error;await loadHouse();setHid(r.data.id);await load(r.data.id)}
+ async function addMember(){const id=txt('Masukkan User ID akun pasangan');if(!id)return;const r=await supabase.from('household_members').insert({household_id:hid,user_id:id,role:'member'});if(r.error)throw r.error;alert('Akun pasangan sudah ditambahkan.')}
+ const btn=(name:string,on:()=>void)=><button className="btn" onClick={on}>{name}</button>;
+ if(!uid||busy&&houses.length===0)return <main className="center"><div className="card pad">Memuat Family Vault…</div></main>;
+ if(!houses.length)return <main className="center"><section className="auth-card"><h1>Family Vault</h1><p className="muted">Belum ada household.</p><button className="primary" onClick={()=>run(createHouse)}>Buat Household</button><p className="muted small">User ID kamu:</p><code className="codebox">{uid}</code><p className="muted small">Jika pasangan sudah membuat household, kirim ID ini kepadanya.</p></section></main>;
+ return <main className="shell"><aside className="sidebar"><div><div className="logo">Family Vault</div><p className="side-muted">Shared Family Finance</p></div><nav>{(['Dashboard','Finance','Investasi','Tabungan','Hutang','Wishlist','Keluarga'] as Tab[]).map(x=><button key={x} className={tab===x?'nav-active':''} onClick={()=>setTab(x)}>{x}</button>)}</nav><div className="side-bottom"><small>{email}</small><button onClick={async()=>{await supabase.auth.signOut();router.replace('/login')}}>Keluar</button></div></aside><section className="content"><header className="topbar"><div><h1>{tab}</h1><p className="muted">{tab==='Finance'||tab==='Dashboard'?`Periode ${label(period)}`:'Data bersama household'}</p></div>{(tab==='Dashboard'||tab==='Finance')&&<input type="month" value={period} onChange={e=>setPeriod(e.target.value)}/>}</header>{err&&<p className="error card pad">{err}</p>}{busy&&<p className="muted">Memperbarui…</p>}
+ {tab==='Dashboard'&&<><div className="stats five">{[['Income',inc],['Expenses',exp],['Leftover',inc-exp],['Sisa Kewajiban',ob],['Hutang',debt]].map(([n,v])=><article className="card" key={String(n)}><span>{n}</span><strong>{rp(Number(v))}</strong></article>)}</div><div className="grid2"><article className="card pad"><h2>Ringkasan Aset</h2><div className="assetgrid"><div>ETF<b>{rp(etfVal)}</b></div><div>Emas<b>{rp(goldVal)}</b></div><div>Saham Dividen<b>{rp(stockVal)}</b></div><div>Tabungan<b>{rp(saveVal)}</b></div></div><div className="totalAsset"><span>Total Aset</span><strong>{rp(etfVal+goldVal+stockVal+saveVal)}</strong></div></article><article className="card pad"><h2>{houses.find(h=>h.id===hid)?.name}</h2><p className="muted">Semua anggota household melihat data yang sama secara online.</p></article></div></>}
+ {tab==='Finance'&&<Finance pi={pi} pe={pe} budgets={budgets.filter(x=>inside(x.period_start))} obs={po} hid={hid} uid={uid} period={period} run={run} ins={ins} del={del} upd={upd} reload={()=>load(hid)}/>} 
+ {tab==='Investasi'&&<Investasi etfs={etfs} gold={gold} stocks={stocks} hid={hid} run={run} ins={ins} del={del} upd={upd}/>} 
+ {tab==='Tabungan'&&<section>{btn('+ Tabungan',()=>run(async()=>{const n=txt('Nama tabungan');if(!n)return;const l=txt('Disimpan di mana?','')||'',t=money('Target','0');if(t===null)return;await ins('savings',{household_id:hid,name:n,location:l,target:t})}))}<div className="cards">{savings.map(s=>{const total=(s.saving_transactions||[]).reduce((a:number,x:R)=>a+Number(x.amount),0);return <article className="card pad" key={s.id}><div className="assetHead"><h3>{s.name}</h3><button onClick={()=>del('savings',s.id)}>Hapus</button></div><strong className="big">{rp(total)}</strong><p className="muted">Target {rp(s.target)}</p>{btn('+ Deposit',()=>run(async()=>{const a=money('Nominal deposit');if(a===null)return;await ins('saving_transactions',{saving_id:s.id,amount:a,happened_at:today()})}))}</article>})}</div></section>}
+ {tab==='Hutang'&&<section>{btn('+ Hutang',()=>run(async()=>{const n=txt('Nama hutang');if(!n)return;const a=money('Nominal awal');if(a===null)return;await ins('debts',{household_id:hid,name:n,source:txt('Sumber','')||'',original_amount:a,borrow_date:today()})}))}<div className="cards">{debts.map(d=>{const paid=(d.debt_payments||[]).reduce((a:number,p:R)=>a+Number(p.amount),0);return <article className="card pad" key={d.id}><h3>{d.name}</h3><p>Sisa <b>{rp(Math.max(0,Number(d.original_amount)-paid))}</b></p>{btn('+ Bayar',()=>run(async()=>{const a=money('Nominal pembayaran');if(a===null)return;await ins('debt_payments',{debt_id:d.id,amount:a,happened_at:today()})}))}<button onClick={()=>del('debts',d.id)}>Hapus</button></article>})}</div></section>}
+ {tab==='Wishlist'&&<section>{btn('+ Wishlist',()=>run(async()=>{const n=txt('Nama wishlist');if(!n)return;const t=money('Target harga','0');if(t===null)return;await ins('wishlists',{household_id:hid,name:n,brand:txt('Brand','')||'',target:t,saved:0,status:'active'})}))}<div className="cards">{wishes.map(w=><article className="card pad" key={w.id}><div className="assetHead"><h3>{w.name}</h3><button onClick={()=>del('wishlists',w.id)}>Hapus</button></div><p>{rp(w.saved)} / {rp(w.target)}</p>{btn('Edit Tabungan',()=>run(async()=>{const s=money('Dana terkumpul',String(w.saved||0));if(s!==null)await upd('wishlists',w.id,{saved:s})}))}{btn('+ Part',()=>run(async()=>{const n=txt('Nama part');if(!n)return;const p=money('Harga','0');if(p===null)return;await ins('wishlist_parts',{wishlist_id:w.id,name:n,brand:txt('Brand/model','')||'',price:p,link:'',bought:false})}))}<div>{(w.wishlist_parts||[]).map((p:R)=><label className="part" key={p.id}><input type="checkbox" checked={p.bought} onChange={()=>run(()=>upd('wishlist_parts',p.id,{bought:!p.bought}))}/><span>{p.name} — {rp(p.price)}</span></label>)}</div></article>)}</div></section>}
+ {tab==='Keluarga'&&<div className="grid2"><article className="card pad"><h2>Household</h2><select value={hid} onChange={e=>{setHid(e.target.value);load(e.target.value)}}>{houses.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><p>{btn('+ Household Baru',()=>run(createHouse))}</p></article><article className="card pad"><h2>Akses Istri</h2><p className="muted">Istri buat akun dulu. Jika belum punya household, layar akan menampilkan User ID miliknya.</p><button className="primary" onClick={()=>run(addMember)}>Tambah Anggota</button><p className="muted small">User ID kamu:</p><code className="codebox">{uid}</code></article></div>}
+ </section></main>}
+
+function Finance({pi,pe,budgets,obs,hid,uid,period,run,ins,del,upd,reload}:{[k:string]:any}){const [sub,setSub]=useState('Income');const b=bounds(period);return <><div className="tabs">{['Income','Expenses','Budgeting','Kewajiban'].map(x=><button className={sub===x?'active':''} onClick={()=>setSub(x)} key={x}>{x}</button>)}</div>{sub==='Income'&&<Panel title="Pemasukan" add={()=>run(async()=>{const s=txt('Sumber income');if(!s)return;const a=money('Nominal');if(a===null)return;await ins('income',{household_id:hid,source:s,amount:a,happened_at:b.start,created_by:uid})})} rows={pi.map((x:R)=>[x.happened_at,x.source,rp(x.amount),<button onClick={()=>del('income',x.id)}>Hapus</button>])}/>} {sub==='Expenses'&&<Panel title="Pengeluaran" add={()=>run(async()=>{const n=txt('Keperluan');if(!n)return;const a=money('Nominal');if(a===null)return;await ins('expenses',{household_id:hid,name:n,category:txt('Kategori','Lainnya')||'Lainnya',amount:a,happened_at:b.start,created_by:uid})})} rows={pe.map((x:R)=>[x.happened_at,x.name,x.category,rp(x.amount),<button onClick={()=>del('expenses',x.id)}>Hapus</button>])}/>} {sub==='Budgeting'&&<><button className="btn" onClick={()=>run(async()=>{const c=txt('Kategori budget');if(!c)return;const a=money('Batas budget');if(a===null)return;await ins('budgets',{household_id:hid,category:c,amount:a,manual_used:null,period_start:b.start,period_end:b.last})})}>+ Budget</button><div className="cards">{budgets.map((x:R)=><article className="card pad" key={x.id}><h3>{x.category}</h3><strong>{rp(x.amount)}</strong><button onClick={()=>del('budgets',x.id)}>Hapus</button></article>)}</div></>} {sub==='Kewajiban'&&<><button className="btn" onClick={()=>run(async()=>{const n=txt('Nama kewajiban');if(!n)return;const a=money('Nominal');if(a===null)return;await ins('obligations',{household_id:hid,name:n,amount:a,status:'belum',due_date:b.start})})}>+ Kewajiban</button><div className="cards">{obs.map((x:R)=><article className="card pad" key={x.id}><h3>{x.name}</h3><strong>{rp(x.amount)}</strong><button onClick={()=>run(()=>upd('obligations',x.id,{status:x.status==='sudah'?'belum':'sudah'}))}>{x.status}</button><button onClick={()=>del('obligations',x.id)}>Hapus</button></article>)}</div></>}</>}
+function Investasi({etfs,gold,stocks,hid,run,ins,del,upd}:{[k:string]:any}){const [sub,setSub]=useState('ETF');return <><div className="tabs">{['ETF','Emas','Dividen'].map(x=><button className={sub===x?'active':''} onClick={()=>setSub(x)} key={x}>{x}</button>)}</div>{sub==='ETF'&&<>{<button className="btn" onClick={()=>run(async()=>{const t=txt('Ticker ETF');if(!t)return;await ins('etf_assets',{household_id:hid,ticker:t.toUpperCase(),name:txt('Nama ETF','')||'',broker:txt('Broker','')||'',current_price:0,current_value:0})})}>+ ETF</button>}<div className="cards">{etfs.map((e:R)=><article className="card pad" key={e.id}><h3>{e.ticker} — {e.name}</h3><p>{rp(e.current_value)}</p><button onClick={()=>run(async()=>{const a=money('Tambah dana');if(a!==null)await ins('etf_transactions',{asset_id:e.id,type:'buy',amount:a,happened_at:today()})})}>+ Dana</button><button onClick={()=>run(async()=>{const v=money('Nilai sekarang',String(e.current_value||0));if(v!==null)await upd('etf_assets',e.id,{current_value:v})})}>Update Nilai</button><button onClick={()=>del('etf_assets',e.id)}>Hapus</button></article>)}</div></>} {sub==='Emas'&&<><button className="btn" onClick={()=>run(async()=>{const n=txt('Nama akun emas');if(!n)return;await ins('gold_assets',{household_id:hid,name:n,platform:txt('Platform','')||'',current_price_per_gram:money('Harga/gram','0')||0})})}>+ Emas</button><div className="cards">{gold.map((g:R)=><article className="card pad" key={g.id}><h3>{g.name}</h3><p>{rp(g.current_price_per_gram)} / gram</p><button onClick={()=>run(async()=>{const gr=money('Gram');if(gr===null)return;const a=money('Nominal');if(a===null)return;await ins('gold_transactions',{asset_id:g.id,type:'buy',grams:gr,amount:a,price_per_gram:gr?a/gr:0,happened_at:today()})})}>Beli</button><button onClick={()=>del('gold_assets',g.id)}>Hapus</button></article>)}</div></>} {sub==='Dividen'&&<><button className="btn" onClick={()=>run(async()=>{const t=txt('Ticker saham');if(!t)return;await ins('dividend_stocks',{household_id:hid,ticker:t.toUpperCase(),name:txt('Nama saham','')||'',broker:txt('Broker','')||'',current_price:money('Harga sekarang','0')||0})})}>+ Saham</button><div className="cards">{stocks.map((s:R)=><article className="card pad" key={s.id}><h3>{s.ticker} — {s.name}</h3><button onClick={()=>run(async()=>{const u=money('Jumlah lembar');if(u===null)return;const a=money('Modal');if(a===null)return;await ins('dividend_stock_transactions',{stock_id:s.id,type:'buy',units:u,amount:a,happened_at:today()})})}>Beli</button><button onClick={()=>run(async()=>{const a=money('Nominal dividen');if(a!==null)await ins('dividends',{stock_id:s.id,amount:a,happened_at:today()})})}>+ Dividen</button><button onClick={()=>del('dividend_stocks',s.id)}>Hapus</button></article>)}</div></>}</>}
+function Panel({title,add,rows}:{title:string;add:()=>void;rows:any[][]}){return <article className="card pad"><div className="panelTitle"><h2>{title}</h2><button className="btn" onClick={add}>+ Tambah</button></div><div className="table-wrap"><table><tbody>{rows.length?rows.map((r,i)=><tr key={i}>{r.map((c,j)=><td key={j}>{c}</td>)}</tr>):<tr><td className="muted">Belum ada data.</td></tr>}</tbody></table></div></article>}
