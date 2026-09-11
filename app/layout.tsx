@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./refined-dashboard.css";
+import "./investment.css";
 
 export const metadata = {
   title: "Family Vault",
