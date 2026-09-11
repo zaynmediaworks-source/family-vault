@@ -6,9 +6,10 @@ import {useRouter} from 'next/navigation';
 import {supabase} from '@/lib/supabase';
 import DashboardAppV2 from './DashboardAppV2';
 import InvestmentExperience from './InvestmentExperience';
+import PeriodExperience from './PeriodExperience';
 
 type Profile={status:string;can_create_household:boolean;display_name:string|null;email:string|null};
-type House={id:string;name:string;status:string};
+type House={id:string;name:string;status:string;period_start_day?:number};
 
 export default function DashboardGate(){
   const router=useRouter();
@@ -19,7 +20,7 @@ export default function DashboardGate(){
     if(!data.user){router.replace('/login');return}
     const [p,h,a,s]=await Promise.all([
       supabase.from('profiles').select('status,can_create_household,display_name,email').eq('id',data.user.id).maybeSingle(),
-      supabase.from('households').select('id,name,status').order('created_at'),
+      supabase.from('households').select('id,name,status,period_start_day').order('created_at'),
       supabase.from('platform_admins').select('role').eq('user_id',data.user.id).maybeSingle(),
       supabase.from('platform_settings').select('*').eq('id',true).maybeSingle(),
     ]);
@@ -36,10 +37,10 @@ export default function DashboardGate(){
   if(settings?.maintenance_enabled&&!admin)return <main className="center maintenance-screen"><section className="auth-card maintenance-card"><div className="maintenance-orb">⚙️</div><div className="kicker">Scheduled Maintenance</div><h1>{settings.maintenance_title||'Maintenance Mode'}</h1><p className="muted">{settings.maintenance_message||'Family Vault sedang dalam pemeliharaan. Silakan coba lagi nanti.'}</p><p className="small muted">Data kamu tetap tersimpan. Akses akan kembali setelah admin menyelesaikan maintenance.</p></section></main>;
 
   const blocked=houses.find(h=>h.status!=='active');
-  const active=houses.find(h=>h.status==='active');
+  const activeHouses=houses.filter(h=>h.status==='active');
+  const active=activeHouses[0];
   if(!active&&blocked)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{blocked.status==='pending'?'Household Menunggu Persetujuan':'Household Dinonaktifkan'}</h1><p><b>{blocked.name}</b></p><p className="muted">{blocked.status==='pending'?'Household sudah dibuat. Admin perlu mengaktifkannya sebelum data keuangan dapat digunakan.':'Household ini sedang disuspend oleh admin.'}</p>{admin&&<Link className="btn" href="/admin">Buka Admin Panel</Link>}</section></main>;
   if(!active&&!profile.can_create_household&&!admin)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>Akun Sudah Disetujui</h1><p className="muted">Akun ini belum diberi izin membuat household. Kamu masih bisa bergabung ke household keluarga melalui kode undangan.</p><Link className="btn" href="/family">Gabung Household</Link></section></main>;
 
-  const activeHouses=houses.filter(h=>h.status==='active');
-  return <><DashboardAppV2/><InvestmentExperience houses={activeHouses}/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
+  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
 }
