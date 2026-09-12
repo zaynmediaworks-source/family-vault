@@ -7,9 +7,9 @@ type R=Record<string,any>;
 export default function HouseholdPeriodSettings({house,uid,members,onSaved}:{house:R|null;uid:string;members:R[];onSaved?:(day:number,timezone:string)=>void}){
  const myRole=members.find(m=>m.user_id===uid)?.role;
  const[day,setDay]=useState(Number(house?.period_start_day||22));
- const[timezone,setTimezone]=useState(house?.timezone||DEFAULT_TIMEZONE);
+ const[timezone,setTimezone]=useState(DEFAULT_TIMEZONE);
  const[msg,setMsg]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
- useEffect(()=>{setDay(Number(house?.period_start_day||22));setTimezone(house?.timezone||DEFAULT_TIMEZONE)},[house?.id,house?.period_start_day,house?.timezone]);
+ useEffect(()=>{let alive=true;setDay(Number(house?.period_start_day||22));if(!house?.id){setTimezone(DEFAULT_TIMEZONE);return()=>{alive=false}};(async()=>{const r=await supabase.from('households').select('timezone,period_start_day').eq('id',house.id).maybeSingle();if(alive&&r.data){setTimezone(r.data.timezone||DEFAULT_TIMEZONE);setDay(Number(r.data.period_start_day||house?.period_start_day||22))}})();return()=>{alive=false}},[house?.id,house?.period_start_day]);
  const options=useMemo(()=>{const detected=browserTimeZone();return TIMEZONE_OPTIONS.some(x=>x.value===detected)?TIMEZONE_OPTIONS:[{value:detected,label:`Perangkat ini · ${detected}`},...TIMEZONE_OPTIONS]},[]);
  if(!house)return null;
  const endDay=day===1?'hari terakhir bulan sebelumnya':`tanggal ${day-1} bulan berikutnya`;
