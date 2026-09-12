@@ -3,26 +3,11 @@
 import {useEffect,useMemo,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {supabase} from '@/lib/supabase';
+import {currentPeriodBounds,DEFAULT_TIMEZONE,formatDateOnly} from '@/lib/timezone';
 
 type R=Record<string,any>;
 const rp=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
 const sum=(a:R[],field='amount')=>a.reduce((s,x)=>s+Number(x[field]||0),0);
-const iso=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
-function periodBounds(startDay:number){
-  const now=new Date();
-  const safeDay=Math.min(Math.max(startDay||22,1),31);
-  const day=Math.min(safeDay,new Date(now.getFullYear(),now.getMonth()+1,0).getDate());
-  let start=new Date(now.getFullYear(),now.getMonth(),day);
-  if(now<start){
-    const pm=new Date(now.getFullYear(),now.getMonth()-1,1);
-    start=new Date(pm.getFullYear(),pm.getMonth(),Math.min(safeDay,new Date(pm.getFullYear(),pm.getMonth()+1,0).getDate()));
-  }
-  const nm=new Date(start.getFullYear(),start.getMonth()+1,1);
-  const next=new Date(nm.getFullYear(),nm.getMonth(),Math.min(safeDay,new Date(nm.getFullYear(),nm.getMonth()+1,0).getDate()));
-  const last=new Date(next);last.setDate(last.getDate()-1);
-  return{start:iso(start),end:iso(next),last:iso(last)};
-}
 
 export default function DashboardMetricsExperience(){
   const[node,setNode]=useState<HTMLElement|null>(null);
@@ -44,18 +29,18 @@ export default function DashboardMetricsExperience(){
       const sync=()=>setVisible((top.querySelector('.kicker')?.textContent||'').trim()==='Dashboard');
       sync();observer=new MutationObserver(sync);observer.observe(top,{subtree:true,childList:true,characterData:true});
       const detect=async()=>{
-        const {data:h}=await supabase.from('households').select('id,name,period_start_day,status,created_at').eq('status','active').order('created_at');
+        const {data:h}=await supabase.from('households').select('id,name,period_start_day,timezone,status,created_at').eq('status','active').order('created_at');
         if(stopped)return;
         const houses=h||[];
         let selected='';
         document.querySelectorAll('select').forEach((el:any)=>{if(houses.some((x:R)=>x.id===el.value))selected=el.value});
         const chosen=houses.find((x:R)=>x.id===selected)||houses[0];
-        if(chosen&&chosen.id!==hid){setHouse(chosen);setHid(chosen.id)}
+        if(chosen&&(chosen.id!==hid||chosen.timezone!==house?.timezone||chosen.period_start_day!==house?.period_start_day)){setHouse(chosen);setHid(chosen.id)}
       };
       detect();timer=setInterval(detect,1200);
     };
     mount();return()=>{stopped=true;observer?.disconnect();if(timer)clearInterval(timer);document.getElementById('fv-dashboard-metrics-host')?.remove()};
-  },[hid]);
+  },[hid,house?.timezone,house?.period_start_day]);
 
   useEffect(()=>{if(!hid)return;(async()=>{
     const tables=await Promise.all([
@@ -75,7 +60,7 @@ export default function DashboardMetricsExperience(){
   })()},[hid]);
 
   const m=useMemo(()=>{
-    const b=periodBounds(Number(house?.period_start_day||22));
+    const b=currentPeriodBounds(Number(house?.period_start_day||22),house?.timezone||DEFAULT_TIMEZONE);
     const ins=(d:string)=>!!d&&d>=b.start&&d<b.end;
     const ti=sum(income.filter(x=>ins(x.happened_at))),te=sum(expenses.filter(x=>ins(x.happened_at))),left=ti-te;
     const obligation=obligations.filter(x=>ins(x.due_date)&&x.status!=='sudah').reduce((s,x)=>s+Number(x.amount||0),0);
@@ -86,7 +71,7 @@ export default function DashboardMetricsExperience(){
 
   if(!node||!visible||!hid)return null;
   return createPortal(<section className="fv-dashboard-summary">
-    <div className="fv-summary-head"><div><span className="fv-eyebrow">RINGKASAN PERIODE</span><h2>Keuangan keluarga dalam satu pandangan.</h2></div><span>{new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric'}).format(new Date(m.start+'T00:00:00'))} — {new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric'}).format(new Date(m.last+'T00:00:00'))}</span></div>
+    <div className="fv-summary-head"><div><span className="fv-eyebrow">RINGKASAN PERIODE</span><h2>Keuangan keluarga dalam satu pandangan.</h2></div><span>{formatDateOnly(m.start)} — {formatDateOnly(m.last)} · {house?.timezone||DEFAULT_TIMEZONE}</span></div>
     <div className="fv-summary-grid">
       <article className="fv-summary-card income"><span>Income</span><strong>{rp(m.ti)}</strong><small>Pemasukan periode ini</small></article>
       <article className="fv-summary-card expense"><span>Expenses</span><strong>{rp(m.te)}</strong><small>Pengeluaran periode ini</small></article>
