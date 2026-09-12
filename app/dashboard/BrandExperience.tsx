@@ -63,7 +63,11 @@ export default function BrandExperience(){
         <p>{msg}</p>
         <div className="fv-welcome-signature"><span>Family Vault</span><i>Financial Archive</i></div>
       </div>
-      <div className="fv-welcome-orbit" aria-hidden="true"><span>FV</span><small>grow · protect · plan</small></div>
+      <div className="fv-welcome-orbit" aria-hidden="true">
+        <span className="fv-orbit-monogram">FV</span>
+        <b>FAMILY VAULT</b>
+        <small>Grow · Protect · Plan</small>
+      </div>
     </section>
     {settings?.quote_enabled!==false&&<section className="fv-quote-feature">
       <div className="fv-quote-photo" style={image?{backgroundImage:`linear-gradient(90deg,rgba(8,35,41,.15),rgba(8,35,41,.55)),url("${image.replace(/"/g,'')}")`}:undefined}>
