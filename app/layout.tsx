@@ -3,6 +3,7 @@ import "./refined-dashboard.css";
 import "./investment.css";
 import "./period-experience.css";
 import "./wealth.css";
+import "./feedback.css";
 
 export const metadata = {
   title: "Family Vault",
