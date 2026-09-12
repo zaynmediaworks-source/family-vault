@@ -11,6 +11,7 @@ import WealthExperienceV3 from './WealthExperienceV3';
 import FeedbackNavLink from './FeedbackNavLink';
 import BrandNavEnhancer from './BrandNavEnhancer';
 import BrandExperience from './BrandExperience';
+import DashboardMetricsExperience from './DashboardMetricsExperience';
 
 type Profile={status:string;can_create_household:boolean;display_name:string|null;email:string|null};
 type House={id:string;name:string;status:string;period_start_day?:number};
@@ -46,5 +47,5 @@ export default function DashboardGate(){
   if(!active&&blocked)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{blocked.status==='pending'?'Household Menunggu Persetujuan':'Household Dinonaktifkan'}</h1><p><b>{blocked.name}</b></p><p className="muted">{blocked.status==='pending'?'Household sudah dibuat. Admin perlu mengaktifkannya sebelum data keuangan dapat digunakan.':'Household ini sedang disuspend oleh admin.'}</p>{admin&&<Link className="btn" href="/admin">Buka Admin Panel</Link>}</section></main>;
   if(!active&&!profile.can_create_household&&!admin)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>Akun Sudah Disetujui</h1><p className="muted">Akun ini belum diberi izin membuat household. Kamu masih bisa bergabung ke household keluarga melalui kode undangan.</p><Link className="btn" href="/family">Gabung Household</Link></section></main>;
 
-  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/><WealthExperienceV3 houses={activeHouses}/><FeedbackNavLink/><BrandNavEnhancer/><BrandExperience/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
+  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/><WealthExperienceV3 houses={activeHouses}/><FeedbackNavLink/><BrandNavEnhancer/><BrandExperience/><DashboardMetricsExperience/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
 }
