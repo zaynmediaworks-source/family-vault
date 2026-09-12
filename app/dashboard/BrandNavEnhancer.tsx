@@ -22,7 +22,10 @@ export default function BrandNavEnhancer(){
     el.dataset.fvLabel=label;
     el.setAttribute('aria-label',label);
     el.textContent='';
-    const icon=document.createElement('span');icon.className='fv-nav-glyph';icon.textContent=glyph;
+    const icon=document.createElement('span');
+    icon.className='fv-nav-glyph';
+    icon.dataset.glyph=glyph;
+    icon.setAttribute('aria-hidden','true');
     const text=document.createElement('span');text.textContent=label;
     el.append(icon,text);
    });
