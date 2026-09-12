@@ -2,6 +2,7 @@ import "./globals.css";
 import "./refined-dashboard.css";
 import "./investment.css";
 import "./period-experience.css";
+import "./wealth.css";
 
 export const metadata = {
   title: "Family Vault",
