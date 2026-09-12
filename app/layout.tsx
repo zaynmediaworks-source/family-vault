@@ -5,6 +5,7 @@ import "./period-experience.css";
 import "./wealth.css";
 import "./feedback.css";
 import "./brand-nav.css";
+import "./brand-experience.css";
 
 export const metadata = {
   title: "Family Vault",
