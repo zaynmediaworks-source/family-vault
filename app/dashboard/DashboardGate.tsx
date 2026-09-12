@@ -14,7 +14,7 @@ import BrandExperience from './BrandExperience';
 import DashboardMetricsExperience from './DashboardMetricsExperience';
 
 type Profile={status:string;can_create_household:boolean;display_name:string|null;email:string|null};
-type House={id:string;name:string;status:string;period_start_day?:number};
+type House={id:string;name:string;status:string;period_start_day?:number;timezone?:string};
 
 export default function DashboardGate(){
   const router=useRouter();
@@ -25,7 +25,7 @@ export default function DashboardGate(){
     if(!data.user){router.replace('/login');return}
     const [p,h,a,s]=await Promise.all([
       supabase.from('profiles').select('status,can_create_household,display_name,email').eq('id',data.user.id).maybeSingle(),
-      supabase.from('households').select('id,name,status,period_start_day').order('created_at'),
+      supabase.from('households').select('id,name,status,period_start_day,timezone').order('created_at'),
       supabase.from('platform_admins').select('role').eq('user_id',data.user.id).maybeSingle(),
       supabase.from('platform_settings').select('*').eq('id',true).maybeSingle(),
     ]);
