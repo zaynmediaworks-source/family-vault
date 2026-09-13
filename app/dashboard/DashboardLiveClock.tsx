@@ -14,9 +14,14 @@ export default function DashboardLiveClock({houses}:{houses:R[]}){
  const house=houses.find(h=>h.id===hid)||houses[0];
  const zone=house?.timezone||'Asia/Makassar';
  const personal=house?.vault_type==='personal';
+ const zoneLabel=zone==='Asia/Jakarta'?'WIB':zone==='Asia/Makassar'?'WITA':zone==='Asia/Jayapura'?'WIT':zone;
  const time=useMemo(()=>new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:zone}).format(now),[now,zone]);
  const date=useMemo(()=>new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:zone}).format(now),[now,zone]);
  useEffect(()=>{let stopped=false;const mount=()=>{if(stopped)return;const actions=document.querySelector('.refined-top .fv-actions');if(!actions){requestAnimationFrame(mount);return}let el=document.getElementById('fv-live-clock-host') as HTMLElement|null;if(!el){el=document.createElement('div');el.id='fv-live-clock-host';actions.insertBefore(el,actions.firstChild)}setHost(el)};mount();return()=>{stopped=true;document.getElementById('fv-live-clock-host')?.remove()}},[]);
  if(!host||!visible)return null;
- return createPortal(<div className="fv-live-clock"><div><span>{personal?'PERSONAL VAULT':'SHARED VAULT'}</span><strong>{time}</strong></div><small>{date}</small></div>,host);
+ return createPortal(<div className={`fv-live-clock ${personal?'personal':'shared'}`}>
+   <div className="fv-clock-kind"><i/><span>{personal?'Personal Vault':'Shared Vault'}</span></div>
+   <div className="fv-clock-main"><strong>{time}</strong><b>{zoneLabel}</b></div>
+   <div className="fv-clock-date"><span>Hari ini</span><small>{date}</small></div>
+ </div>,host);
 }
