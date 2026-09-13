@@ -8,6 +8,7 @@ import DashboardAppV2 from './DashboardAppV2';
 import InvestmentExperience from './InvestmentExperience';
 import PeriodExperience from './PeriodExperience';
 import WealthExperienceV4 from './WealthExperienceV4';
+import ReceivableExperience from './ReceivableExperience';
 import FeedbackNavLink from './FeedbackNavLink';
 import BrandNavEnhancer from './BrandNavEnhancer';
 import BrandExperience from './BrandExperience';
@@ -50,5 +51,5 @@ export default function DashboardGate(){
   if(!active&&blocked)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{blocked.status==='pending'?'Vault Menunggu Persetujuan Admin':'Vault Dinonaktifkan'}</h1><p><b>{blocked.name}</b></p><p className="muted">{blocked.status==='pending'?'Akunmu sudah aktif. Vault yang kamu buat perlu diaktifkan admin sebelum data keuangan dapat digunakan.':'Vault ini sedang disuspend oleh admin.'}</p><Link className="btn alt" href="/family">Pengaturan Vault</Link>{admin&&<Link className="btn" href="/admin">Buka Admin Panel</Link>}</section></main>;
   if(!active)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{pendingJoin?'Menunggu Persetujuan Owner':'Mulai Family Vault'}</h1><p className="muted">{pendingJoin?'Permintaan bergabungmu sudah terkirim. Owner Vault perlu menyetujuinya sebelum kamu mendapat akses.':'Akunmu sudah aktif. Kamu bisa membuat Personal Vault, Shared Vault, atau bergabung ke Vault yang sudah ada.'}</p><Link className="btn" href="/family">{pendingJoin?'Lihat Status Vault':'Buat / Gabung Vault'}</Link></section></main>;
 
-  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/><WealthExperienceV4 houses={activeHouses}/><FeedbackNavLink/><BrandNavEnhancer/><BrandExperience houses={activeHouses}/><DashboardMetricsExperience/><DashboardTicker enabled={!!settings?.dashboard_ticker_enabled} text={settings?.dashboard_ticker_text||''}/><DashboardLiveClock houses={activeHouses}/><VaultWordingExperience houses={activeHouses}/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
+  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/><WealthExperienceV4 houses={activeHouses}/><ReceivableExperience houses={activeHouses}/><FeedbackNavLink/><BrandNavEnhancer/><BrandExperience houses={activeHouses}/><DashboardMetricsExperience/><DashboardTicker enabled={!!settings?.dashboard_ticker_enabled} text={settings?.dashboard_ticker_text||''}/><DashboardLiveClock houses={activeHouses}/><VaultWordingExperience houses={activeHouses}/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
 }
