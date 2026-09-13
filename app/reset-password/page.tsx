@@ -26,8 +26,6 @@ export default function ResetPasswordPage(){
      markReady();return;
     }
 
-    // For the implicit recovery flow Supabase reads the access token from the URL hash.
-    // Give the client a moment to persist that recovery session before checking it.
     for(let i=0;i<6;i++){
      const {data,error}=await supabase.auth.getSession();
      if(!error&&data.session){markReady();return}
@@ -50,11 +48,10 @@ export default function ResetPasswordPage(){
    if(!sessionData.session)throw new Error('Sesi reset sudah berakhir. Minta tautan reset baru.');
    const {error}=await supabase.auth.updateUser({password});
    if(error)throw error;
-   await supabase.auth.signOut();
-   setDone(true);setReady(false);setPassword('');setConfirm('');setMessage('Password berhasil diperbarui. Silakan login menggunakan password baru.');
+   setDone(true);setReady(false);setPassword('');setConfirm('');setMessage('Password berhasil diperbarui. Sesi akun tetap aktif; lanjutkan ke dashboard atau login kembali nanti dengan password baru.');
   }catch(e){setMessage(e instanceof Error?e.message:'Password belum bisa diperbarui. Silakan coba lagi.')}
   finally{setBusy(false)}
  }
 
- return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>Atur password baru</h1><p role="status" className={done?'status success':'muted'}>{message}</p>{ready&&!done&&<form onSubmit={submit}><label>Password baru<input autoComplete="new-password" type="password" minLength={10} required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimal 10 karakter"/></label><label>Konfirmasi password<input autoComplete="new-password" type="password" minLength={10} required value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Ulangi password baru"/></label><button className="primary" disabled={busy}>{busy?'Menyimpan…':'Simpan password baru'}</button></form>}<p><Link href="/login">Kembali ke login</Link></p></section></main>;
+ return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>Atur password baru</h1><p role="status" className={done?'status success':'muted'}>{message}</p>{ready&&!done&&<form onSubmit={submit}><label>Password baru<input autoComplete="new-password" type="password" minLength={10} required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimal 10 karakter"/></label><label>Konfirmasi password<input autoComplete="new-password" type="password" minLength={10} required value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Ulangi password baru"/></label><button className="primary" disabled={busy}>{busy?'Menyimpan…':'Simpan password baru'}</button></form>}<p><Link href={done?'/dashboard':'/login'}>{done?'Lanjut ke dashboard':'Kembali ke login'}</Link></p></section></main>;
 }
