@@ -13,9 +13,10 @@ import BrandNavEnhancer from './BrandNavEnhancer';
 import BrandExperience from './BrandExperience';
 import DashboardMetricsExperience from './DashboardMetricsExperience';
 import DashboardLiveClock from './DashboardLiveClock';
+import VaultWordingExperience from './VaultWordingExperience';
 
 type Profile={status:string;can_create_household:boolean;display_name:string|null;email:string|null};
-type House={id:string;name:string;status:string;period_start_day?:number;timezone?:string};
+type House={id:string;name:string;status:string;period_start_day?:number;timezone?:string;vault_type?:'personal'|'shared'};
 
 export default function DashboardGate(){
   const router=useRouter();
@@ -26,7 +27,7 @@ export default function DashboardGate(){
     if(!data.user){router.replace('/login');return}
     const [p,h,a,s,j]=await Promise.all([
       supabase.from('profiles').select('status,can_create_household,display_name,email').eq('id',data.user.id).maybeSingle(),
-      supabase.from('households').select('id,name,status,period_start_day,timezone').order('created_at'),
+      supabase.from('households').select('id,name,status,period_start_day,timezone,vault_type').order('created_at'),
       supabase.from('platform_admins').select('role').eq('user_id',data.user.id).maybeSingle(),
       supabase.from('platform_settings').select('*').eq('id',true).maybeSingle(),
       supabase.from('household_join_requests').select('id').eq('user_id',data.user.id).eq('status','pending').limit(1),
@@ -45,8 +46,8 @@ export default function DashboardGate(){
   const blocked=houses.find(h=>h.status!=='active');
   const activeHouses=houses.filter(h=>h.status==='active');
   const active=activeHouses[0];
-  if(!active&&blocked)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{blocked.status==='pending'?'Household Menunggu Persetujuan Admin':'Household Dinonaktifkan'}</h1><p><b>{blocked.name}</b></p><p className="muted">{blocked.status==='pending'?'Akunmu sudah aktif. Household yang kamu buat perlu diaktifkan admin sebelum data keuangan dapat digunakan.':'Household ini sedang disuspend oleh admin.'}</p><Link className="btn alt" href="/family">Pengaturan Keluarga</Link>{admin&&<Link className="btn" href="/admin">Buka Admin Panel</Link>}</section></main>;
-  if(!active)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{pendingJoin?'Menunggu Persetujuan Owner':'Mulai Family Vault'}</h1><p className="muted">{pendingJoin?'Permintaan bergabungmu sudah terkirim. Owner household perlu menyetujuinya sebelum kamu mendapat akses.':'Akunmu sudah aktif. Kamu bisa membuat household baru atau bergabung ke household keluarga yang sudah ada.'}</p><Link className="btn" href="/family">{pendingJoin?'Lihat Status Keluarga':'Buat / Gabung Household'}</Link></section></main>;
+  if(!active&&blocked)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{blocked.status==='pending'?'Vault Menunggu Persetujuan Admin':'Vault Dinonaktifkan'}</h1><p><b>{blocked.name}</b></p><p className="muted">{blocked.status==='pending'?'Akunmu sudah aktif. Vault yang kamu buat perlu diaktifkan admin sebelum data keuangan dapat digunakan.':'Vault ini sedang disuspend oleh admin.'}</p><Link className="btn alt" href="/family">Pengaturan Vault</Link>{admin&&<Link className="btn" href="/admin">Buka Admin Panel</Link>}</section></main>;
+  if(!active)return <main className="center"><section className="auth-card"><div className="logo">Family Vault</div><h1>{pendingJoin?'Menunggu Persetujuan Owner':'Mulai Family Vault'}</h1><p className="muted">{pendingJoin?'Permintaan bergabungmu sudah terkirim. Owner Vault perlu menyetujuinya sebelum kamu mendapat akses.':'Akunmu sudah aktif. Kamu bisa membuat Personal Vault, Shared Vault, atau bergabung ke Vault yang sudah ada.'}</p><Link className="btn" href="/family">{pendingJoin?'Lihat Status Vault':'Buat / Gabung Vault'}</Link></section></main>;
 
-  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/><WealthExperienceV4 houses={activeHouses}/><FeedbackNavLink/><BrandNavEnhancer/><BrandExperience/><DashboardMetricsExperience/><DashboardLiveClock houses={activeHouses}/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
+  return <><DashboardAppV2/><PeriodExperience houses={activeHouses}/><InvestmentExperience houses={activeHouses}/><WealthExperienceV4 houses={activeHouses}/><FeedbackNavLink/><BrandNavEnhancer/><BrandExperience houses={activeHouses}/><DashboardMetricsExperience/><DashboardLiveClock houses={activeHouses}/><VaultWordingExperience houses={activeHouses}/>{admin&&<Link href="/admin" className="floating-admin">🛡️ Admin</Link>}</>;
 }
