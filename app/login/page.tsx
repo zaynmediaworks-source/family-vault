@@ -7,7 +7,7 @@ type AuthExperience={login_quote_text?:string;login_quote_author?:string;login_t
 
 export default function LoginPage(){
  const router=useRouter();
- const [mode,setMode]=useState<'login'|'signup'>('login'),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[experience,setExperience]=useState<AuthExperience>({});
+ const [mode,setMode]=useState<'login'|'signup'>('login'),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[passwordConfirm,setPasswordConfirm]=useState(''),[displayName,setDisplayName]=useState(''),[contactPhone,setContactPhone]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[experience,setExperience]=useState<AuthExperience>({});
  useEffect(()=>{if(new URLSearchParams(window.location.search).get('reason')==='timeout')setMessage('Sesi berakhir karena tidak ada aktivitas. Silakan login kembali.');supabase.rpc('get_public_auth_experience').then(({data})=>{if(data)setExperience(data as AuthExperience)}).catch(()=>{})},[]);
  async function submit(e:FormEvent){
   e.preventDefault();setMessage('');setBusy(true);
@@ -23,9 +23,14 @@ export default function LoginPage(){
     if(admin.data||(aal.data?.currentLevel==='aal1'&&aal.data?.nextLevel==='aal2'))router.replace('/security?next=/dashboard');
     else router.replace('/dashboard');
    }else{
+    const cleanName=displayName.trim(),cleanPhone=contactPhone.trim();
+    if(cleanName.length<2)throw new Error('Masukkan nama lengkap atau nama panggilan minimal 2 karakter.');
+    if(cleanName.length>80)throw new Error('Nama maksimal 80 karakter.');
+    if(cleanPhone&&(!/^[+0-9][0-9 ()-]{6,30}$/.test(cleanPhone)))throw new Error('Nomor yang bisa dihubungi belum valid.');
     if(password.length<10)throw new Error('Gunakan password minimal 10 karakter.');
-    const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:`${window.location.origin}/`}});if(error)throw error;
-    if(data.session)router.replace('/dashboard');else setMessage('Akun berhasil dibuat. Cek email untuk konfirmasi, lalu masuk ke Family Vault. Akun tidak memerlukan approval admin.');
+    if(password!==passwordConfirm)throw new Error('Konfirmasi password belum sama.');
+    const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:`${window.location.origin}/`,data:{display_name:cleanName,contact_phone:cleanPhone||null}}});if(error)throw error;
+    if(data.session)router.replace('/family');else setMessage('Akun berhasil dibuat. Cek email untuk konfirmasi, lalu masuk dan pilih buat atau gabung Vault.');
    }
   }catch(e){setMessage(e instanceof Error?e.message:'Koneksi gagal. Silakan coba lagi.')}finally{setBusy(false)}
  }
@@ -44,12 +49,13 @@ export default function LoginPage(){
       {experience.announcement_enabled&&<div className="auth-announcement"><b>{experience.announcement_title||'Pengumuman'}</b><span>{experience.announcement_message}</span></div>}
     </div>
     <section className="auth-panel-wrap"><div className="auth-panel">
-      <div className="auth-panel-head"><div className="auth-mini-mark">FV</div><div><h2>{mode==='login'?'Selamat datang kembali':'Buat ruang finansialmu'}</h2><p>{mode==='login'?'Masuk untuk melanjutkan perjalanan keluarga.':'Buat akun sekarang. Approval hanya diperlukan saat membuat household.'}</p></div></div>
+      <div className="auth-panel-head"><div className="auth-mini-mark">FV</div><div><h2>{mode==='login'?'Selamat datang kembali':'Buat ruang finansialmu'}</h2><p>{mode==='login'?'Masuk untuk melanjutkan perjalanan keluarga.':'Lengkapi profil, lalu buat Vault atau bergabung dengan Vault keluarga.'}</p></div></div>
       <div className="segmented auth-segmented"><button disabled={busy} aria-pressed={mode==='login'} className={mode==='login'?'active':''} onClick={()=>{setMode('login');setMessage('')}}>Login</button><button disabled={busy} aria-pressed={mode==='signup'} className={mode==='signup'?'active':''} onClick={()=>{setMode('signup');setMessage('')}}>Buat Akun</button></div>
-      <form className="auth-form" onSubmit={submit}><label>Email<input type="email" autoComplete="email" placeholder="nama@email.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" autoComplete={mode==='login'?'current-password':'new-password'} minLength={mode==='signup'?10:1} placeholder="••••••••••" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{mode==='signup'&&<p className="auth-helper">Minimal 10 karakter. Gunakan password unik yang tidak dipakai di layanan lain.</p>}<button className="auth-primary" disabled={busy}>{busy?'Memproses…':mode==='login'?'Masuk ke Family Vault':'Buat Akun'}</button></form>
+      <form className="auth-form" onSubmit={submit}>{mode==='signup'&&<><label>Nama Anda<input autoComplete="name" minLength={2} maxLength={80} placeholder="Nama lengkap atau panggilan" value={displayName} onChange={e=>setDisplayName(e.target.value)} required/></label><label>Nomor yang bisa dihubungi <span className="auth-helper">(opsional)</span><input type="tel" autoComplete="tel" maxLength={31} placeholder="Contoh: +62 812 3456 7890" value={contactPhone} onChange={e=>setContactPhone(e.target.value)}/></label></>}<label>Email<input type="email" autoComplete="email" placeholder="nama@email.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" autoComplete={mode==='login'?'current-password':'new-password'} minLength={mode==='signup'?10:1} placeholder="••••••••••" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{mode==='signup'&&<><label>Konfirmasi password<input type="password" autoComplete="new-password" minLength={10} placeholder="Ulangi password" value={passwordConfirm} onChange={e=>setPasswordConfirm(e.target.value)} required/></label><p className="auth-helper">Minimal 10 karakter. Gunakan password unik yang tidak dipakai di layanan lain.</p></>}<button className="auth-primary" disabled={busy}>{busy?'Memproses…':mode==='login'?'Masuk ke Family Vault':'Buat Akun'}</button></form>
       {mode==='login'&&<button className="link-btn auth-forgot" disabled={busy} onClick={resetPassword}>Lupa password?</button>}{message&&<p className="status auth-status" role="status">{message}</p>}
       <div className="auth-footnote">Secure family finance · Shared only with people you trust.</div>
     </div></section>
    </section>
  </main>;
 }
+
