@@ -6,15 +6,17 @@ import {supabase} from '@/lib/supabase';
 
 type R=Record<string,any>;
 
-export default function BrandExperience(){
+export default function BrandExperience({houses}:{houses:R[]}){
   const [node,setNode]=useState<HTMLElement|null>(null);
   const [settings,setSettings]=useState<R|null>(null);
-  const [name,setName]=useState('Keluarga');
+  const [name,setName]=useState('User');
   const [visible,setVisible]=useState(false);
+  const [vaultType,setVaultType]=useState<'personal'|'shared'>(houses[0]?.vault_type==='personal'?'personal':'shared');
 
   useEffect(()=>{
     let stopped=false;
     let observer:MutationObserver|null=null;
+    let timer:any;
     const mount=()=>{
       if(stopped)return;
       const content=document.querySelector('.refined-content') as HTMLElement|null;
@@ -26,8 +28,9 @@ export default function BrandExperience(){
       const sync=()=>{
         const kicker=top.querySelector('.kicker')?.textContent?.trim()||'';
         setVisible(kicker==='Dashboard');
+        let selected='';document.querySelectorAll('select').forEach((el:any)=>{if(houses.some(h=>h.id===el.value))selected=el.value});const house=houses.find(h=>h.id===selected)||houses[0];setVaultType(house?.vault_type==='personal'?'personal':'shared');
       };
-      sync();
+      sync();timer=setInterval(sync,800);
       observer=new MutationObserver(sync);
       observer.observe(top,{subtree:true,childList:true,characterData:true});
     };
@@ -40,17 +43,18 @@ export default function BrandExperience(){
           supabase.from('platform_settings').select('welcome_message,quote_enabled,quote_image_url,quote_text,quote_author').eq('id',true).maybeSingle(),
         ]);
         if(!stopped){
-          const display=p.data?.display_name||p.data?.email?.split('@')[0]||u.user.email?.split('@')[0]||'Keluarga';
+          const display=p.data?.display_name||p.data?.email?.split('@')[0]||u.user.email?.split('@')[0]||'User';
           setName(display);
           setSettings(s.data||null);
         }
       }
     })();
-    return()=>{stopped=true;observer?.disconnect();const h=document.getElementById('fv-brand-experience-host');h?.remove()};
-  },[]);
+    return()=>{stopped=true;observer?.disconnect();clearInterval(timer);const h=document.getElementById('fv-brand-experience-host');h?.remove()};
+  },[houses]);
 
   if(!node||!visible)return null;
-  const msg=settings?.welcome_message||'Kelola hari ini, tumbuhkan masa depan keluarga dengan lebih tenang.';
+  const personal=vaultType==='personal';
+  const msg=settings?.welcome_message||(personal?'Kelola hari ini, tumbuhkan masa depan finansialmu dengan lebih tenang.':'Kelola hari ini, tumbuhkan masa depan bersama dengan lebih tenang.');
   const quote=settings?.quote_text||'Kebebasan finansial dibangun dari keputusan kecil yang dilakukan dengan konsisten.';
   const author=settings?.quote_author||'Family Vault';
   const image=settings?.quote_image_url||'';
@@ -58,20 +62,20 @@ export default function BrandExperience(){
   return createPortal(<>
     <section className="fv-welcome-hero">
       <div className="fv-welcome-copy">
-        <span className="fv-eyebrow">FAMILY FINANCE, BEAUTIFULLY ORGANIZED</span>
+        <span className="fv-eyebrow">{personal?'PERSONAL FINANCE, BEAUTIFULLY ORGANIZED':'SHARED FINANCE, BEAUTIFULLY ORGANIZED'}</span>
         <h2>Selamat datang, <em>{name}</em>.</h2>
         <p>{msg}</p>
-        <div className="fv-welcome-signature"><span>Family Vault</span><i>Financial Archive</i></div>
+        <div className="fv-welcome-signature"><span>Family Vault</span><i>{personal?'Personal Financial Space':'Shared Financial Space'}</i></div>
       </div>
       <div className="fv-welcome-orbit" aria-hidden="true">
         <span className="fv-orbit-monogram">FV</span>
-        <b>FAMILY VAULT</b>
+        <b>{personal?'PERSONAL VAULT':'SHARED VAULT'}</b>
         <small>Grow · Protect · Plan</small>
       </div>
     </section>
     {settings?.quote_enabled!==false&&<section className="fv-quote-feature">
       <div className="fv-quote-photo" style={image?{backgroundImage:`linear-gradient(90deg,rgba(8,35,41,.15),rgba(8,35,41,.55)),url("${image.replace(/"/g,'')}")`}:undefined}>
-        {!image&&<div className="fv-quote-placeholder"><span>✦</span><small>Family moments, future goals.</small></div>}
+        {!image&&<div className="fv-quote-placeholder"><span>✦</span><small>{personal?'Your goals, your future.':'Shared moments, shared goals.'}</small></div>}
       </div>
       <blockquote><span className="fv-quote-mark">“</span><p>{quote}</p><footer>— {author}</footer></blockquote>
     </section>}
