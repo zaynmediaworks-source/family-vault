@@ -9,6 +9,8 @@ import "./brand-experience.css";
 import "./login-experience.css";
 import "./dashboard-clock.css";
 import "./confirmation-dialog.css";
+import "./music.css";
+import MusicPlayer from './components/MusicPlayer';
 
 export const metadata = {
   title: "Family Vault",
@@ -18,7 +20,8 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>{children}<MusicPlayer/></body>
     </html>
   );
 }
+

@@ -6,6 +6,7 @@ import {useRouter} from 'next/navigation';
 import {supabase} from '@/lib/supabase';
 import AdminBrandExperiencePanel from './AdminBrandExperiencePanel';
 import AddAdminPanel from './AddAdminPanel';
+import MusicAdmin from './MusicAdmin';
 
 type R=Record<string,any>;
 const rp=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
@@ -107,6 +108,7 @@ export default function AdminPage(){
     {err&&<p className="status error">{err}</p>}
     <AdminBrandExperiencePanel/>
     <AddAdminPanel/>
+    <MusicAdmin/>
 
     <section className="admin-section">
       <div className="admin-title"><div><div className="kicker">Accounts</div><h2>Akun Pengguna</h2></div><span>{profiles.length} akun</span></div>
