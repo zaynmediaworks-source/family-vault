@@ -1,47 +1,61 @@
 'use client';
-import {useEffect,useState} from 'react';
 
-const primary=[['Dashboard','▦'],['Finance','◫'],['Investasi','↗'],['Tabungan','●']];
-const more=[['Hutang','⚖','Hutang Piutang'],['Wishlist','♡','Wishlist'],['Otomatis','↻','Otomatis'],['Arsip','▣','Arsip']];
-const utilities=[['/feedback','✦','Saran & Kritik'],['/family','⌘','Pengaturan'],['/profile','○','Profil'],['/security','◇','Keamanan']];
+import {useEffect,useRef,useState} from 'react';
+import Link from 'next/link';
+
+const pages=[['Dashboard','▦','Dashboard'],['Finance','◫','Finance'],['Investasi','↗','Investasi'],['Tabungan','●','Tabungan'],['Hutang','⚖','Hutang Piutang'],['Wishlist','♡','Wishlist'],['Otomatis','↻','Otomatis'],['Arsip','▣','Arsip']];
+const utilities=[['/feedback','✦','Saran & Kritik'],['/family','⌘','Pengaturan Vault'],['/profile','○','Profil'],['/security','◇','Keamanan']];
 
 export default function MobileBottomNav(){
- const [open,setOpen]=useState(false);
- const [active,setActive]=useState('Dashboard');
- useEffect(()=>{
-   const sync=()=>{
-     const activeButton=document.querySelector('.refined-sidebar nav button.nav-active') as HTMLElement|null;
-     setActive(activeButton?.dataset.fvLabel||(activeButton?.textContent||'').trim()||'Dashboard');
-   };
-   sync();
-   const observer=new MutationObserver(sync);
-   observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-fv-label']});
-   return()=>observer.disconnect();
- },[]);
- const go=(label:string)=>{
-   const buttons=Array.from(document.querySelectorAll('.refined-sidebar nav button')) as HTMLButtonElement[];
-   buttons.find(b=>(b.dataset.fvLabel||(b.textContent||'').trim())===label)?.click();
-   setOpen(false);
- };
- const utility=(href:string)=>{
-   (document.querySelector(`.refined-sidebar .side-bottom a[href="${href}"]`) as HTMLAnchorElement|null)?.click();
-   setOpen(false);
- };
- const logout=()=>{
-   (document.querySelector('.refined-sidebar .side-bottom button') as HTMLButtonElement|null)?.click();
-   setOpen(false);
- };
- return <div className={`fv-mobile-bottom-nav ${open?'is-open':''}`}>
-   {open&&<button className="fv-mobile-nav-backdrop" aria-label="Tutup menu" onClick={()=>setOpen(false)}/>} 
-   <div className="fv-mobile-nav-sheet" aria-hidden={!open}>
-     <div className="fv-mobile-sheet-head"><div><small>Family Vault</small><b>Menu lainnya</b></div><button onClick={()=>setOpen(false)} aria-label="Tutup">×</button></div>
-     <div className="fv-mobile-sheet-grid">{more.map(([key,icon,label])=><button key={key} className={active===key?'is-active':''} onClick={()=>go(key)}><span>{icon}</span><b>{label}</b></button>)}</div>
-     <div className="fv-mobile-sheet-label">Akun & Vault</div>
-     <div className="fv-mobile-sheet-utility">{utilities.map(([href,icon,label])=><button key={href} onClick={()=>utility(href)}><span>{icon}</span><b>{label}</b></button>)}<button className="fv-mobile-logout" onClick={logout}><span>↪</span><b>Keluar</b></button></div>
-   </div>
-   <nav className="fv-mobile-nav-dock" aria-label="Navigasi utama">
-     {primary.map(([label,icon])=><button key={label} className={active===label?'is-active':''} onClick={()=>go(label)}><span>{icon}</span><small>{label}</small></button>)}
-     <button className={more.some(([key])=>key===active)||open?'is-active':''} aria-expanded={open} onClick={()=>setOpen(v=>!v)}><span>•••</span><small>Lainnya</small></button>
-   </nav>
- </div>;
+  const [open,setOpen]=useState(false);
+  const [active,setActive]=useState('Dashboard');
+  const launcher=useRef<HTMLButtonElement>(null);
+  const panel=useRef<HTMLDivElement>(null);
+  const close=()=>{setOpen(false);launcher.current?.focus()};
+  useEffect(()=>{
+    document.body.classList.add('fv-compact-navigation');
+    const sync=()=>{
+      const button=document.querySelector<HTMLElement>('.refined-sidebar nav button.nav-active');
+      setActive(button?.dataset.fvLabel||button?.textContent?.trim()||'Dashboard');
+    };
+    sync();
+    const observer=new MutationObserver(sync);
+    observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-fv-label']});
+    return()=>{observer.disconnect();document.body.classList.remove('fv-compact-navigation')};
+  },[]);
+  useEffect(()=>{
+    if(!open)return;
+    panel.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const previous=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    const keydown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();close()}
+      if(event.key==='Tab'){
+        const elements=panel.current?.querySelectorAll<HTMLElement>('button,a[href]');
+        if(!elements?.length)return;
+        const first=elements[0],last=elements[elements.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    };
+    document.addEventListener('keydown',keydown);
+    return()=>{document.body.style.overflow=previous;document.removeEventListener('keydown',keydown)};
+  },[open]);
+  const go=(label:string)=>{
+    close();
+    const buttons=Array.from(document.querySelectorAll<HTMLButtonElement>('.refined-sidebar nav button'));
+    buttons.find(b=>(b.dataset.fvLabel||b.textContent?.trim())===label)?.click();
+  };
+  return <div className="fv-compact-nav">
+    <button ref={launcher} className="fv-menu-launcher" aria-expanded={open} aria-controls="fv-menu-panel" aria-haspopup="dialog" onClick={()=>setOpen(v=>!v)}><span aria-hidden="true">☰</span> Menu</button>
+    {open&&<div className="fv-menu-overlay" onClick={event=>{if(event.target===event.currentTarget)close()}}>
+      <div ref={panel} id="fv-menu-panel" className="fv-menu-panel" role="dialog" aria-modal="true" aria-labelledby="fv-menu-title">
+        <header><div><small>Family Vault</small><h2 id="fv-menu-title">Mau ke mana?</h2></div><button onClick={close} aria-label="Tutup menu">×</button></header>
+        <nav aria-label="Navigasi utama" className="fv-menu-grid">{pages.map(([key,icon,label])=><button key={key} aria-current={active===key?'page':undefined} onClick={()=>go(key)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
+        <p className="fv-menu-caption">Akun & Vault</p>
+        <nav aria-label="Akun dan vault" className="fv-menu-grid">{utilities.map(([href,icon,label])=><Link key={href} href={href} onClick={close}><span aria-hidden="true">{icon}</span>{label}</Link>)}</nav>
+        <button className="fv-menu-logout" onClick={()=>{close();document.querySelector<HTMLButtonElement>('.refined-sidebar .side-bottom button')?.click()}}>↪ Keluar</button>
+      </div>
+    </div>}
+  </div>;
 }

@@ -10,6 +10,7 @@ import "./login-experience.css";
 import "./dashboard-clock.css";
 import "./confirmation-dialog.css";
 import "./music.css";
+import "./compact-ui.css";
 import MusicPlayer from './components/MusicPlayer';
 
 export const metadata = {

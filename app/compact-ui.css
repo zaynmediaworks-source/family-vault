@@ -1,0 +1,53 @@
+/* Compact navigation keeps the existing navigation handlers mounted. */
+body.fv-compact-navigation .refined-sidebar{display:none!important}
+body.fv-compact-navigation .refined-shell{grid-template-columns:minmax(0,1fr)}
+body.fv-compact-navigation .refined-content{padding-bottom:100px}
+.fv-menu-launcher{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));z-index:900;display:flex;align-items:center;gap:9px;min-height:46px;padding:0 17px;border:1px solid #477b78;border-radius:24px;background:#164d50;color:#fff;font-size:14px;font-weight:750;box-shadow:0 6px 20px #163f4330}
+.fv-menu-launcher span{font-size:20px}
+.fv-menu-overlay{position:fixed;inset:0;z-index:950;background:#07141a70;backdrop-filter:blur(3px);display:flex;align-items:flex-end;padding:20px 14px calc(74px + env(safe-area-inset-bottom))}
+.fv-menu-panel{width:380px;max-width:100%;max-height:calc(100dvh - 110px - env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain;background:linear-gradient(145deg,#faf7f1,#eef5f1);border:1px solid #ffffffaa;border-radius:24px;padding:18px;box-shadow:0 18px 60px #102c3a40;color:#183f43}
+.fv-menu-panel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.fv-menu-panel small,.fv-menu-caption{font-size:11px;color:#637e7a}
+.fv-menu-panel h2{margin:4px 0 0;font-size:22px}
+.fv-menu-panel header button{height:44px;width:44px;border:0;border-radius:14px;background:#e4eeea;color:#214c4d;font-size:26px}
+.fv-menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fv-menu-grid button,.fv-menu-grid a{min-height:48px;display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #d5e2dd;border-radius:13px;background:#ffffffa8;color:#315953;font-size:12px;font-weight:700;text-decoration:none;text-align:left}
+.fv-menu-grid span{font-size:19px;flex:0 0 23px;text-align:center}
+.fv-menu-grid [aria-current="page"]{background:#1b605f;color:#fff;border-color:#1b605f}
+.fv-menu-caption{margin:18px 0 8px}
+.fv-menu-logout{min-height:44px;margin-top:12px;padding:8px 12px;border:0;border-radius:12px;background:#f4e6e0;color:#944b3d;font-weight:700}
+.fv-compact-nav button:focus-visible,.fv-compact-nav a:focus-visible{outline:3px solid #ca8c69;outline-offset:3px}
+@media(max-width:760px){
+  body{padding-bottom:0!important}
+  .content.refined-content{padding:16px 12px 96px}
+  .refined-top.fv-top{flex-direction:column;gap:12px;margin-bottom:16px}
+  .refined-top h1{font-size:25px;overflow-wrap:anywhere}
+  .refined-top .fv-actions{width:100%;gap:8px}
+  .refined-top .fv-actions>select{width:100%;min-width:0;max-width:100%}
+  .period-aware-control{min-width:0;flex:1}
+  .refined-content input,.refined-content select,.fv-modal input,.fv-modal select,.fv-modal textarea,.finance-overlay input,.finance-overlay select{font-size:16px;max-width:100%;min-width:0}
+  .refined-content .btn,.refined-content .icon,.finance-overlay .btn,.fv-modal button{min-height:44px}
+  .refined-content .grid2,.refined-content .cards,.refined-content .budget-grid{grid-template-columns:minmax(0,1fr)}
+  .refined-content .metric-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .refined-content .card{min-width:0}
+  .refined-content .pad,.refined-content .stat{padding:15px}
+  .refined-content .card-head,.refined-content .panel-line,.refined-content .archive-row{flex-wrap:wrap}
+  .refined-content .panel-actions{margin:8px 0 14px;text-align:left}
+  .refined-content .action-row{flex-wrap:wrap}
+  .table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+  .table-wrap th,.table-wrap td{padding:12px 10px}
+  .refined-content .tabs{gap:6px}
+  .refined-content .tabs button{min-height:44px}
+  .finance-overlay{padding:10px}
+  .finance-overlay-panel{padding:16px 12px;border-radius:18px;min-height:calc(100dvh - 20px)}
+  .fv-modal-backdrop{padding:10px}
+  .fv-modal{max-height:calc(100dvh - 20px);border-radius:18px}
+  .fv-modal>header,.fv-modal>footer,.fv-modal-body{padding:14px}
+  .fv-modal-actions{flex-wrap:wrap}
+  .fv-modal-actions>button{flex:1}
+  .fv-toast{left:12px;right:12px;max-width:none}
+  .profile-shell{padding:20px 12px 90px}
+  .profile-house-list>div{flex-wrap:wrap}
+  body.fv-compact-navigation .fv-music-dock{bottom:calc(14px + env(safe-area-inset-bottom))}
+  body.fv-compact-navigation .floating-admin{bottom:calc(74px + env(safe-area-inset-bottom));right:12px;padding:9px 12px;font-size:12px}
+}
