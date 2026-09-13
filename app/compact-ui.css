@@ -68,8 +68,11 @@ body.fv-compact-navigation .refined-content{padding-bottom:100px}
   body.fv-compact-navigation .refined-sidebar .fv-brand-copy b{font-size:14px}
   body.fv-compact-navigation .refined-sidebar .fv-brand-copy small{font-size:7px;letter-spacing:.09em}
   .fv-sidebar-toggle{position:absolute;right:8px;top:28px;display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:8px;background:transparent;color:#9eb8b7;box-shadow:none}
-  body.fv-desktop-sidebar-hidden .refined-top>div:first-child{position:relative;padding-left:46px}
-  body.fv-desktop-sidebar-hidden .fv-sidebar-toggle{left:0;right:auto;top:0;color:#355b5c}
+  body.fv-desktop-sidebar-hidden .refined-top>div:first-child{display:grid;grid-template-columns:36px minmax(0,1fr);column-gap:10px;align-items:center;padding-left:0;min-width:0}
+  body.fv-desktop-sidebar-hidden .refined-top>div:first-child>.kicker{grid-column:2;grid-row:1}
+  body.fv-desktop-sidebar-hidden .refined-top>div:first-child>h1{grid-column:2;grid-row:2;min-width:0}
+  body.fv-desktop-sidebar-hidden .refined-top>div:first-child>p{grid-column:2;grid-row:3}
+  body.fv-desktop-sidebar-hidden .refined-top .fv-sidebar-toggle{position:static;grid-column:1;grid-row:2;align-self:center;color:#355b5c}
   .fv-sidebar-toggle:hover{background:rgba(128,165,158,.13);color:#7aaea9}
   .fv-sidebar-toggle:focus-visible{outline:3px solid #ca8c69;outline-offset:3px}
 }
