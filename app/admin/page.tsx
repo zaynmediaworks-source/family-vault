@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {supabase} from '@/lib/supabase';
 import AdminBrandExperiencePanel from './AdminBrandExperiencePanel';
+import AddAdminPanel from './AddAdminPanel';
 
 type R=Record<string,any>;
 const rp=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
@@ -105,6 +106,7 @@ export default function AdminPage(){
     <header className="admin-head"><div><div className="kicker">Platform Control</div><h1>Admin Family Vault</h1><p>Approve akun, kontrol akses membuat household, kelola household, dan lihat data keuangan secara read-only.</p></div><Link className="btn alt" href="/dashboard">Dashboard Saya</Link></header>
     {err&&<p className="status error">{err}</p>}
     <AdminBrandExperiencePanel/>
+    <AddAdminPanel/>
 
     <section className="admin-section">
       <div className="admin-title"><div><div className="kicker">Accounts</div><h2>Akun Pengguna</h2></div><span>{profiles.length} akun</span></div>
