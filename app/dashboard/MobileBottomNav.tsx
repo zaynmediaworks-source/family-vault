@@ -58,7 +58,7 @@ export default function MobileBottomNav(){
     buttons.find(b=>(b.dataset.fvLabel||b.textContent?.trim())===label)?.click();
   };
   return <div className="fv-compact-nav">
-    <button className="fv-sidebar-toggle" aria-expanded={!sidebarHidden} onClick={()=>setSidebarHidden(v=>!v)}><span aria-hidden="true">{sidebarHidden?'☰':'‹'}</span> {sidebarHidden?'Tampilkan menu':'Sembunyikan menu'}</button>
+    <button className="fv-sidebar-toggle" aria-label={sidebarHidden?'Tampilkan menu':'Sembunyikan menu'} title={sidebarHidden?'Tampilkan menu':'Sembunyikan menu'} aria-expanded={!sidebarHidden} onClick={()=>setSidebarHidden(v=>!v)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/><path d={sidebarHidden?'m13 9 3 3-3 3':'m16 9-3 3 3 3'}/></svg></button>
     <button ref={launcher} className="fv-menu-launcher" aria-expanded={open} aria-controls="fv-menu-panel" aria-haspopup="dialog" onClick={()=>setOpen(v=>!v)}><span aria-hidden="true">☰</span> Menu</button>
     {open&&<div className="fv-menu-overlay" onClick={event=>{if(event.target===event.currentTarget)close()}}>
       <div ref={panel} id="fv-menu-panel" className="fv-menu-panel" role="dialog" aria-modal="true" aria-labelledby="fv-menu-title">

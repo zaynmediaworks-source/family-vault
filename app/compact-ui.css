@@ -58,9 +58,12 @@ body.fv-compact-navigation .refined-content{padding-bottom:100px}
 @media(min-width:761px){
   .fv-compact-nav .fv-menu-launcher,.fv-compact-nav .fv-menu-overlay{display:none}
   body.fv-compact-navigation .refined-shell{grid-template-columns:232px minmax(0,1fr)}
-  body.fv-compact-navigation .refined-sidebar{display:flex!important;padding-bottom:84px}
+  body.fv-compact-navigation .refined-sidebar{display:flex!important;padding-bottom:24px}
   body.fv-desktop-sidebar-hidden .refined-sidebar{display:none!important}
   body.fv-desktop-sidebar-hidden .refined-shell{grid-template-columns:minmax(0,1fr)}
-  .fv-sidebar-toggle{position:fixed;left:14px;bottom:16px;z-index:900;display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #477b78;border-radius:14px;background:#164d50;color:white;font-size:12px;font-weight:700;box-shadow:0 6px 20px #163f4330}
-  .fv-sidebar-toggle span{font-size:20px;line-height:1}
+  .fv-sidebar-toggle{position:fixed;left:210px;top:28px;z-index:900;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #477b78;border-radius:13px;background:#164d50;color:white;box-shadow:0 3px 12px #163f4320}
+  body.fv-desktop-sidebar-hidden .fv-sidebar-toggle{left:12px}
+  body.fv-desktop-sidebar-hidden .refined-top{padding-left:42px}
+  .fv-sidebar-toggle:hover{background:#236466}
+  .fv-sidebar-toggle:focus-visible{outline:3px solid #ca8c69;outline-offset:3px}
 }
