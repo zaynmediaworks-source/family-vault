@@ -2,6 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
+import {createPortal} from 'react-dom';
 
 const pages=[['Dashboard','▦','Dashboard'],['Finance','◫','Finance'],['Investasi','↗','Investasi'],['Tabungan','●','Tabungan'],['Hutang','⚖','Hutang Piutang'],['Wishlist','♡','Wishlist'],['Otomatis','↻','Otomatis'],['Arsip','▣','Arsip']];
 const utilities=[['/feedback','✦','Saran & Kritik'],['/family','⌘','Pengaturan Vault'],['/profile','○','Profil'],['/security','◇','Keamanan']];
@@ -9,6 +10,14 @@ const utilities=[['/feedback','✦','Saran & Kritik'],['/family','⌘','Pengatur
 export default function MobileBottomNav(){
   const [open,setOpen]=useState(false);
   const [sidebarHidden,setSidebarHidden]=useState(false);
+  const [toggleHost,setToggleHost]=useState<HTMLElement|null>(null);
+  useEffect(()=>{
+    const locate=()=>setToggleHost(document.querySelector<HTMLElement>(sidebarHidden?'.refined-top > div:first-child':'.refined-sidebar'));
+    locate();
+    const observer=new MutationObserver(locate);
+    observer.observe(document.body,{childList:true,subtree:true});
+    return()=>observer.disconnect();
+  },[sidebarHidden]);
   useEffect(()=>{
     document.body.classList.toggle('fv-desktop-sidebar-hidden',sidebarHidden);
     return()=>document.body.classList.remove('fv-desktop-sidebar-hidden');
@@ -58,7 +67,7 @@ export default function MobileBottomNav(){
     buttons.find(b=>(b.dataset.fvLabel||b.textContent?.trim())===label)?.click();
   };
   return <div className="fv-compact-nav">
-    <button className="fv-sidebar-toggle" aria-label={sidebarHidden?'Tampilkan menu':'Sembunyikan menu'} title={sidebarHidden?'Tampilkan menu':'Sembunyikan menu'} aria-expanded={!sidebarHidden} onClick={()=>setSidebarHidden(v=>!v)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/><path d={sidebarHidden?'m13 9 3 3-3 3':'m16 9-3 3 3 3'}/></svg></button>
+    {toggleHost&&createPortal(<button className="fv-sidebar-toggle" aria-label={sidebarHidden?'Tampilkan menu':'Sembunyikan menu'} title={sidebarHidden?'Tampilkan menu':'Sembunyikan menu'} aria-expanded={!sidebarHidden} onClick={()=>setSidebarHidden(v=>!v)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={sidebarHidden?'M4 6h16M4 12h16M4 18h16':'m14 6-6 6 6 6'}/></svg></button>,toggleHost)}
     <button ref={launcher} className="fv-menu-launcher" aria-expanded={open} aria-controls="fv-menu-panel" aria-haspopup="dialog" onClick={()=>setOpen(v=>!v)}><span aria-hidden="true">☰</span> Menu</button>
     {open&&<div className="fv-menu-overlay" onClick={event=>{if(event.target===event.currentTarget)close()}}>
       <div ref={panel} id="fv-menu-panel" className="fv-menu-panel" role="dialog" aria-modal="true" aria-labelledby="fv-menu-title">
