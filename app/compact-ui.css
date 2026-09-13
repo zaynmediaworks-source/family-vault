@@ -1,6 +1,8 @@
 /* Compact navigation keeps the existing navigation handlers mounted. */
+@media(max-width:760px){
 body.fv-compact-navigation .refined-sidebar{display:none!important}
 body.fv-compact-navigation .refined-shell{grid-template-columns:minmax(0,1fr)}
+}
 body.fv-compact-navigation .refined-content{padding-bottom:100px}
 .fv-menu-launcher{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));z-index:900;display:flex;align-items:center;gap:9px;min-height:46px;padding:0 17px;border:1px solid #477b78;border-radius:24px;background:#164d50;color:#fff;font-size:14px;font-weight:750;box-shadow:0 6px 20px #163f4330}
 .fv-menu-launcher span{font-size:20px}
@@ -50,4 +52,15 @@ body.fv-compact-navigation .refined-content{padding-bottom:100px}
   .profile-house-list>div{flex-wrap:wrap}
   body.fv-compact-navigation .fv-music-dock{bottom:calc(14px + env(safe-area-inset-bottom))}
   body.fv-compact-navigation .floating-admin{bottom:calc(74px + env(safe-area-inset-bottom));right:12px;padding:9px 12px;font-size:12px}
+}
+
+.fv-sidebar-toggle{display:none}
+@media(min-width:761px){
+  .fv-compact-nav .fv-menu-launcher,.fv-compact-nav .fv-menu-overlay{display:none}
+  body.fv-compact-navigation .refined-shell{grid-template-columns:232px minmax(0,1fr)}
+  body.fv-compact-navigation .refined-sidebar{display:flex!important;padding-bottom:84px}
+  body.fv-desktop-sidebar-hidden .refined-sidebar{display:none!important}
+  body.fv-desktop-sidebar-hidden .refined-shell{grid-template-columns:minmax(0,1fr)}
+  .fv-sidebar-toggle{position:fixed;left:14px;bottom:16px;z-index:900;display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #477b78;border-radius:14px;background:#164d50;color:white;font-size:12px;font-weight:700;box-shadow:0 6px 20px #163f4330}
+  .fv-sidebar-toggle span{font-size:20px;line-height:1}
 }

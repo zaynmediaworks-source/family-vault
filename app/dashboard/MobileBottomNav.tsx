@@ -8,6 +8,17 @@ const utilities=[['/feedback','✦','Saran & Kritik'],['/family','⌘','Pengatur
 
 export default function MobileBottomNav(){
   const [open,setOpen]=useState(false);
+  const [sidebarHidden,setSidebarHidden]=useState(false);
+  useEffect(()=>{
+    document.body.classList.toggle('fv-desktop-sidebar-hidden',sidebarHidden);
+    return()=>document.body.classList.remove('fv-desktop-sidebar-hidden');
+  },[sidebarHidden]);
+  useEffect(()=>{
+    const desktop=window.matchMedia('(min-width: 761px)');
+    const resize=()=>{if(desktop.matches)setOpen(false)};
+    desktop.addEventListener('change',resize);
+    return()=>desktop.removeEventListener('change',resize);
+  },[]);
   const [active,setActive]=useState('Dashboard');
   const launcher=useRef<HTMLButtonElement>(null);
   const panel=useRef<HTMLDivElement>(null);
@@ -47,6 +58,7 @@ export default function MobileBottomNav(){
     buttons.find(b=>(b.dataset.fvLabel||b.textContent?.trim())===label)?.click();
   };
   return <div className="fv-compact-nav">
+    <button className="fv-sidebar-toggle" aria-expanded={!sidebarHidden} onClick={()=>setSidebarHidden(v=>!v)}><span aria-hidden="true">{sidebarHidden?'☰':'‹'}</span> {sidebarHidden?'Tampilkan menu':'Sembunyikan menu'}</button>
     <button ref={launcher} className="fv-menu-launcher" aria-expanded={open} aria-controls="fv-menu-panel" aria-haspopup="dialog" onClick={()=>setOpen(v=>!v)}><span aria-hidden="true">☰</span> Menu</button>
     {open&&<div className="fv-menu-overlay" onClick={event=>{if(event.target===event.currentTarget)close()}}>
       <div ref={panel} id="fv-menu-panel" className="fv-menu-panel" role="dialog" aria-modal="true" aria-labelledby="fv-menu-title">
