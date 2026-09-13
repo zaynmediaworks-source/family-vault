@@ -33,14 +33,14 @@ export default function AdminBrandExperiencePanel(){
       dashboard_ticker_text:settings.dashboard_ticker_text||'',
       updated_by:u.user?.id||null,
       updated_at:new Date().toISOString(),
-    }).eq('id',true);
+    }).eq('id',true).select('id').single();
     setSaving(false);
     if(r.error)setErr(r.error.message);else setMsg('Brand experience dashboard dan login berhasil diperbarui.');
   }
 
-  if(!settings)return <section className="admin-section"><div className="admin-card">Memuat pengaturan tampilan…</div></section>;
+  if(!settings)return <section className="admin-section"><div className="admin-card">{err?<p className="status error" role="alert">{err}</p>:'Memuat pengaturan tampilan…'}</div></section>;
   return <section className="admin-section fv-admin-brand-section">
-    <div className="admin-title"><div><div className="kicker">Brand Experience</div><h2>Dashboard & Login Experience</h2><p className="muted small">Konten global untuk seluruh pengguna Family Vault.</p></div><span>GLOBAL</span></div>
+    <div className="admin-title"><div><div className="kicker">Pengaturan Tampilan</div><h2>Running Text, Quotes & Gambar</h2><p className="muted small">Atur konten dashboard dan login untuk seluruh pengguna Family Vault.</p></div><span>GLOBAL</span></div>
     <form className="admin-card fv-brand-admin-card" onSubmit={save}>
       <div className="kicker">Dashboard</div>
       <div className="admin-form-grid">
@@ -68,3 +68,4 @@ export default function AdminBrandExperiencePanel(){
     </form>
   </section>;
 }
+
