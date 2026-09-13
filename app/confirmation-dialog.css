@@ -1,0 +1,8 @@
+.fv-confirm{display:grid;grid-template-columns:48px 1fr;gap:15px;align-items:start;padding:3px 0}
+.fv-confirm-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#fff1f3;color:#a8394d;font-size:24px;font-weight:900;border:1px solid #ffdce3}
+.fv-confirm p{margin:2px 0 7px;color:#25313b;font-size:14px;line-height:1.55}
+.fv-confirm small{display:block;color:#77818c;font-size:12px;line-height:1.55}
+.btn.fv-danger-btn{background:linear-gradient(145deg,#b54558,#963346);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(168,57,77,.2)}
+.btn.fv-danger-btn:hover{background:linear-gradient(145deg,#a83a4d,#852b3c)}
+.btn.fv-danger-btn:disabled{opacity:.58;cursor:not-allowed;box-shadow:none}
+@media(max-width:520px){.fv-confirm{grid-template-columns:40px 1fr}.fv-confirm-icon{width:40px;height:40px;border-radius:13px}}

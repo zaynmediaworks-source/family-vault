@@ -8,6 +8,7 @@ import "./brand-nav.css";
 import "./brand-experience.css";
 import "./login-experience.css";
 import "./dashboard-clock.css";
+import "./confirmation-dialog.css";
 
 export const metadata = {
   title: "Family Vault",

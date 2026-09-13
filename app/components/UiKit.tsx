@@ -7,6 +7,16 @@ export function Modal({open,title,children,onClose,footer}:{open:boolean;title:s
  return <div className="fv-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="fv-modal" role="dialog" aria-modal="true" aria-label={title}><header><div><div className="kicker">Family Vault</div><h2>{title}</h2></div><button className="icon" onClick={onClose} aria-label="Tutup">✕</button></header><div className="fv-modal-body">{children}</div>{footer&&<footer>{footer}</footer>}</section></div>
 }
 
+export function ConfirmDialog({open,title,message,detail,confirmLabel='Hapus',busy=false,onClose,onConfirm}:{open:boolean;title:string;message:string;detail?:string;confirmLabel?:string;busy?:boolean;onClose:()=>void;onConfirm:()=>void|Promise<void>}){
+ const close=()=>{if(!busy)onClose()};
+ return <Modal open={open} title={title} onClose={close} footer={<div className="fv-modal-actions"><button className="btn alt" type="button" disabled={busy} onClick={close}>Batal</button><button className="btn fv-danger-btn" type="button" disabled={busy} onClick={onConfirm}>{busy?'Menghapus…':confirmLabel}</button></div>}>
+  <div className="fv-confirm">
+   <div className="fv-confirm-icon" aria-hidden="true">!</div>
+   <div><p>{message}</p>{detail&&<small>{detail}</small>}</div>
+  </div>
+ </Modal>
+}
+
 export function Toast({message,tone='success',onDone}:{message:string;tone?:'success'|'error'|'info';onDone:()=>void}){
  useEffect(()=>{if(!message)return;const t=setTimeout(onDone,3200);return()=>clearTimeout(t)},[message,onDone]);
  if(!message)return null;

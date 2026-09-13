@@ -4,16 +4,17 @@ import {FormEvent,useEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {supabase} from '@/lib/supabase';
 import {DEFAULT_TIMEZONE,todayInTimeZone} from '@/lib/timezone';
-import {Modal,Toast} from '@/app/components/UiKit';
+import {ConfirmDialog,Modal,Toast} from '@/app/components/UiKit';
 
 type R=Record<string,any>;
 type Mode='new'|'edit'|'payment'|'editPayment'|null;
+type PendingDelete={kind:'receivable'|'payment';row:R}|null;
 const rp=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
 const fmt=(d:string)=>d?new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(`${d}T00:00:00`)):'—';
 
 export default function ReceivableExperience({houses}:{houses:R[]}){
  const[uid,setUid]=useState(''),[hid,setHid]=useState(houses[0]?.id||''),[host,setHost]=useState<HTMLElement|null>(null),[visible,setVisible]=useState(false);
- const[rows,setRows]=useState<R[]>([]),[payments,setPayments]=useState<R[]>([]),[mode,setMode]=useState<Mode>(null),[selected,setSelected]=useState<R|null>(null),[toast,setToast]=useState(''),[tone,setTone]=useState<'success'|'error'|'info'>('success');
+ const[rows,setRows]=useState<R[]>([]),[payments,setPayments]=useState<R[]>([]),[mode,setMode]=useState<Mode>(null),[selected,setSelected]=useState<R|null>(null),[pendingDelete,setPendingDelete]=useState<PendingDelete>(null),[deleting,setDeleting]=useState(false),[toast,setToast]=useState(''),[tone,setTone]=useState<'success'|'error'|'info'>('success');
  const house=houses.find(h=>h.id===hid)||houses[0],timezone=house?.timezone||DEFAULT_TIMEZONE,today=todayInTimeZone(timezone);
 
  async function load(id:string){
@@ -57,26 +58,26 @@ export default function ReceivableExperience({houses}:{houses:R[]}){
   return Number(bl>0)-Number(al>0)||(a.due_date||'9999').localeCompare(b.due_date||'9999');
  }),[rows,payments]);
  async function refresh(msg?:string){await load(hid);window.dispatchEvent(new CustomEvent("fv-finance-changed",{detail:{householdId:hid}}));if(msg){setTone('success');setToast(msg)}}
- async function del(r:R){if(!confirm(`Hapus piutang ${r.borrower_name} beserta seluruh riwayat cicilan dan transaksi Finance terkait?`))return;const q=await supabase.from('receivables').delete().eq('id',r.id);if(q.error){setTone('error');setToast(q.error.message)}else refresh('Piutang dihapus.')}
- async function deletePayment(p:R){if(!confirm('Hapus pembayaran cicilan ini beserta Income terkait?'))return;const q=await supabase.from('receivable_payments').delete().eq('id',p.id);if(q.error){setTone('error');setToast(q.error.message);return}refresh('Pembayaran dihapus.')}
+ async function confirmDelete(){if(!pendingDelete||deleting)return;setDeleting(true);const {kind,row}=pendingDelete;const q=kind==='receivable'?await supabase.from('receivables').delete().eq('id',row.id):await supabase.from('receivable_payments').delete().eq('id',row.id);setDeleting(false);if(q.error){setTone('error');setToast(q.error.message);return}setPendingDelete(null);await refresh(kind==='receivable'?'Piutang dihapus.':'Pembayaran dihapus.')}
+ const deleteDialog=<ConfirmDialog open={!!pendingDelete} title={pendingDelete?.kind==='receivable'?'Hapus Piutang?':'Hapus Pembayaran?'} message={pendingDelete?.kind==='receivable'?`Piutang ${pendingDelete.row.borrower_name} akan dihapus permanen.`:`Pembayaran sebesar ${rp(pendingDelete?.row.amount||0)} akan dihapus permanen.`} detail={pendingDelete?.kind==='receivable'?'Seluruh riwayat cicilan, Expense piutang, dan Income pembayaran yang terhubung juga ikut dihapus.':'Income Pembayaran Piutang yang terhubung juga ikut dihapus dan sisa piutang akan dihitung ulang.'} busy={deleting} onClose={()=>setPendingDelete(null)} onConfirm={confirmDelete}/>;
 
- if(!visible||!host)return <>{mode&&<ReceivableModal mode={mode} row={selected} hid={hid} uid={uid} timezone={timezone} currentPaid={selected?paid(selected.receivable_id||selected.id):0} onClose={()=>{setMode(null);setSelected(null)}} onSaved={async m=>{setMode(null);setSelected(null);await refresh(m)}}/>}<Toast message={toast} tone={tone} onDone={()=>setToast('')}/></>;
+ if(!visible||!host)return <>{mode&&<ReceivableModal mode={mode} row={selected} hid={hid} uid={uid} timezone={timezone} currentPaid={selected?paid(selected.receivable_id||selected.id):0} onClose={()=>{setMode(null);setSelected(null)}} onSaved={async m=>{setMode(null);setSelected(null);await refresh(m)}}/>}{deleteDialog}<Toast message={toast} tone={tone} onDone={()=>setToast('')}/></>;
  return <>{createPortal(<section className="receivable-section">
    <div className="receivable-head"><div><div className="kicker">UANG YANG DIPINJAMKAN</div><h2>Piutang</h2><p className="muted">Catat siapa yang meminjam, tanggal pemberian, janji pengembalian, cicilan, dan progres pelunasan.</p></div><button className="btn" onClick={()=>{setSelected(null);setMode('new')}}>＋ Tambah Piutang</button></div>
    <div className="receivable-metrics"><div><span>Sisa Piutang</span><b>{rp(totalOutstanding)}</b></div><div><span>Belum Lunas</span><b>{active.length}</b></div><div><span>Lewat Jatuh Tempo</span><b>{overdue}</b></div></div>
    {sorted.length===0?<div className="receivable-empty">Belum ada piutang. Catat uang yang kamu pinjamkan agar progres pengembaliannya tidak terlupakan.</div>:<div className="receivable-grid">{sorted.map(r=>{const pRows=payments.filter(x=>x.receivable_id===r.id),p=paid(r.id),amount=Number(r.original_amount||0),left=Math.max(0,amount-p),pct=amount?Math.min(100,p/amount*100):0,done=left<=0,late=!done&&r.due_date&&r.due_date<today;return <article className={`receivable-card ${done?'is-done':''} ${late?'is-late':''}`} key={r.id}>
-    <div className="receivable-card-head"><div><div className="receivable-badges"><span className={`badge ${done?'done':'pending'}`}>{done?'Lunas':'Belum Lunas'}</span>{late&&<span className="receivable-late">Terlambat</span>}<span className="receivable-method">{r.repayment_type==='sekali'?'Sekali Bayar':'Cicilan'}</span></div><h3>{r.borrower_name}</h3><small>{r.purpose||'Tanpa keterangan tujuan'}</small></div><div className="action-row"><button className="icon" onClick={()=>{setSelected(r);setMode('edit')}}>Edit</button><button className="icon danger" onClick={()=>del(r)}>Hapus</button></div></div>
+    <div className="receivable-card-head"><div><div className="receivable-badges"><span className={`badge ${done?'done':'pending'}`}>{done?'Lunas':'Belum Lunas'}</span>{late&&<span className="receivable-late">Terlambat</span>}<span className="receivable-method">{r.repayment_type==='sekali'?'Sekali Bayar':'Cicilan'}</span></div><h3>{r.borrower_name}</h3><small>{r.purpose||'Tanpa keterangan tujuan'}</small></div><div className="action-row"><button className="icon" onClick={()=>{setSelected(r);setMode('edit')}}>Edit</button><button className="icon danger" onClick={()=>setPendingDelete({kind:'receivable',row:r})}>Hapus</button></div></div>
     <div className="receivable-money"><div><span>Sisa</span><strong>{rp(left)}</strong></div><div><span>Piutang awal</span><b>{rp(amount)}</b></div></div>
     <div className="progress receivable-progress"><div style={{width:`${pct}%`}}/></div><div className="receivable-progress-copy"><span>Sudah kembali {rp(p)}</span><b>{pct.toFixed(1)}%</b></div>
     <div className="receivable-details"><div><span>Diberikan</span><b>{fmt(r.lent_at)}</b></div><div><span>Janji kembali</span><b>{fmt(r.due_date)}</b></div>{r.contact&&<div><span>Kontak</span><b>{r.contact}</b></div>}{r.repayment_type==='cicilan'&&(r.planned_installments||r.planned_installment_amount)&&<div><span>Rencana cicilan</span><b>{r.planned_installments?`${r.planned_installments}x`:''}{r.planned_installments&&r.planned_installment_amount?' · ':''}{r.planned_installment_amount?rp(r.planned_installment_amount):''}</b></div>}</div>
     {r.note&&<p className="receivable-note">{r.note}</p>}
     {!done&&<button className="btn receivable-pay-btn" onClick={()=>{setSelected(r);setMode('payment')}}>＋ Catat Pembayaran / Cicilan</button>}
-    {pRows.length>0&&<details className="receivable-history"><summary>Riwayat pembayaran ({pRows.length})</summary>{pRows.map(x=><div className="receivable-history-row" key={x.id}><div><b>{rp(x.amount)}</b><span>{fmt(x.paid_at)}{x.note?` · ${x.note}`:''}</span></div><div className="action-row"><button className="icon" onClick={()=>{setSelected({...r,...x,original_amount:r.original_amount,borrower_name:r.borrower_name});setMode('editPayment')}}>Edit</button><button className="icon danger" onClick={()=>deletePayment(x)}>Hapus</button></div></div>)}</details>}
+    {pRows.length>0&&<details className="receivable-history"><summary>Riwayat pembayaran ({pRows.length})</summary>{pRows.map(x=><div className="receivable-history-row" key={x.id}><div><b>{rp(x.amount)}</b><span>{fmt(x.paid_at)}{x.note?` · ${x.note}`:''}</span></div><div className="action-row"><button className="icon" onClick={()=>{setSelected({...r,...x,original_amount:r.original_amount,borrower_name:r.borrower_name});setMode('editPayment')}}>Edit</button><button className="icon danger" onClick={()=>setPendingDelete({kind:'payment',row:x})}>Hapus</button></div></div>)}</details>}
    </article>})}</div>}
    <div className="receivable-divider"><span>Hutang Saya</span><i/></div>
  </section>,host)}
  <ReceivableModal mode={mode} row={selected} hid={hid} uid={uid} timezone={timezone} currentPaid={selected?paid(selected.receivable_id||selected.id):0} onClose={()=>{setMode(null);setSelected(null)}} onSaved={async m=>{setMode(null);setSelected(null);await refresh(m)}}/>
- <Toast message={toast} tone={tone} onDone={()=>setToast('')}/></>;
+ {deleteDialog}<Toast message={toast} tone={tone} onDone={()=>setToast('')}/></>;
 }
 
 function ReceivableModal({mode,row,hid,uid,timezone,currentPaid,onClose,onSaved}:{mode:Mode;row:R|null;hid:string;uid:string;timezone:string;currentPaid:number;onClose:()=>void;onSaved:(m:string)=>Promise<void>}){
