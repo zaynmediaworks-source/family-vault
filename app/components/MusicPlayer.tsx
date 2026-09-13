@@ -2,7 +2,10 @@
 import {useEffect,useRef,useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {supabase} from '@/lib/supabase';
+import {dailyMusicTrack} from '@/lib/musicSchedule';
 export default function MusicPlayer(){
+ const [clock,setClock]=useState(()=>new Date());
+ useEffect(()=>{const tick=()=>setClock(new Date());const timer=setInterval(tick,1000);window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);return()=>{clearInterval(timer);window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick)}},[]);
  const path=usePathname(),audio=useRef<HTMLAudioElement|null>(null),uid=useRef(''),wanted=useRef(true);
  const[tracks,setTracks]=useState<any[]>([]),[settings,setSettings]=useState<any>(null),[index,setIndex]=useState(0),[playing,setPlaying]=useState(false),[volume,setVolume]=useState(.3),[message,setMessage]=useState('');
  const[expanded,setExpanded]=useState(false);
@@ -23,7 +26,7 @@ export default function MusicPlayer(){
  const{data:sub}=supabase.auth.onAuthStateChange((event,session)=>{if(!session){audio.current?.pause();setSettings(null)}setTimeout(refresh,0)});
  return()=>{alive=false;clearInterval(timer);window.removeEventListener('fv-music-refresh',refresh);sub.subscription.unsubscribe()};
  },[]);
- const track=settings?.mode==='daily'?(tracks.find(t=>t.id===settings.daily_track_id)||tracks[0]):tracks[index%Math.max(1,tracks.length)];
+ const track=settings?.mode==='daily'?dailyMusicTrack(tracks,settings,clock):tracks[index%Math.max(1,tracks.length)];
  const available=!!settings?.enabled&&!!track&&!hidden;
  useEffect(()=>{const a=audio.current;if(!a)return;if(!available){a.pause();return}setMessage('');if(wanted.current)a.play().catch(()=>setMessage('Tekan Putar Musik untuk mulai.'));},[available,track?.url]);
  useEffect(()=>{if(audio.current)audio.current.volume=volume},[volume]);
