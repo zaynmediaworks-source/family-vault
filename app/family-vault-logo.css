@@ -1,0 +1,6 @@
+/* Approved Family Vault artwork. Keep the original asset intact. */
+.fv-approved-logo{display:block;width:128px;height:128px;object-fit:contain;background:#fffaf0;border-radius:20px;flex-shrink:0}
+.auth-mini-mark,.fv-brand-monogram{font-size:0!important;flex-shrink:0;background-color:#fffaf0!important;background-image:url('/brand/family-vault-logo.png')!important;background-repeat:no-repeat!important;background-size:200% auto!important;background-position:50% 33%!important;border:1px solid rgba(197,166,106,.4);box-shadow:none!important}
+.fv-brand-monogram:after{display:none!important}
+.auth-brand-row{flex-wrap:wrap}
+@media(max-width:600px){.fv-approved-logo{width:100px;height:100px;border-radius:16px}.auth-brand-row{gap:12px}}

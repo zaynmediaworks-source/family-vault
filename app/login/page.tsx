@@ -43,7 +43,7 @@ export default function LoginPage(){
    {experience.login_ticker_enabled!==false&&<div className="auth-ticker"><div className="auth-ticker-track"><span>{ticker}</span><span aria-hidden="true">{ticker}</span></div></div>}
    <section className="auth-stage">
     <div className="auth-story">
-      <div className="auth-brand-row"><div className="auth-brand-mark">FV</div><div><strong>Family Vault</strong><span>Grow · Protect · Plan</span></div></div>
+      <div className="auth-brand-row"><img className="fv-approved-logo" src="/brand/family-vault-logo.png" alt="Family Vault" width={128} height={128}/><span>Grow · Protect · Plan</span></div>
       <div className="auth-story-copy"><span className="auth-eyebrow">YOUR FAMILY FINANCIAL ARCHIVE</span><h1>Build the future.<br/>Protect what matters.</h1><p>Satu ruang aman untuk mengelola arus kas, investasi, tabungan, hutang, dan tujuan keluarga bersama orang yang kamu percaya.</p></div>
       <blockquote className="auth-quote"><span>“</span><p>{experience.login_quote_text||'A strong family future starts with small, consistent choices today.'}</p><footer>— {experience.login_quote_author||'Family Vault'}</footer></blockquote>
       {experience.announcement_enabled&&<div className="auth-announcement"><b>{experience.announcement_title||'Pengumuman'}</b><span>{experience.announcement_message}</span></div>}
